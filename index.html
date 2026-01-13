@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NBA Smart TV (Server-Side)</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS STYLES --- */
         html,
@@ -13,9 +15,10 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #111;
+            background-color: #050505;
             overflow: hidden;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
         }
 
         #tv-frame {
@@ -28,7 +31,26 @@
             overflow: hidden;
         }
 
-        /* The Blue/Retro TV Frame Overlay */
+        /* --- PLAYERS --- */
+        .video-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            /* Hidden by default */
+            transition: opacity 0.5s ease-in-out;
+            z-index: 1;
+        }
+
+        .video-player.active {
+            opacity: 1;
+            z-index: 2;
+        }
+
+        /* --- UI LAYERS --- */
         #tv-bezel {
             position: absolute;
             top: 0;
@@ -36,94 +58,11 @@
             width: 100%;
             height: 100%;
             z-index: 50;
-            /* High Z-index to overlay video */
             pointer-events: none;
-            /* Let clicks pass through */
             box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.95), inset 0 0 20px 5px rgba(0, 80, 255, 0.5);
-            /* Stronger blue glow */
             border: 8px solid #111;
-            /* Thicker dark border */
         }
 
-        #player-div {
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            /* Disables mouse interaction with YouTube directly */
-        }
-
-        /* Splash Screen (TV OFF State) */
-        #splash-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            color: #fff;
-            transition: opacity 0.5s;
-        }
-
-        #splash-screen h1 {
-            font-size: 4rem;
-            margin-bottom: 2rem;
-            letter-spacing: 5px;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-            animation: flicker 2s infinite;
-        }
-
-        @keyframes flicker {
-            0% {
-                opacity: 1;
-            }
-
-            5% {
-                opacity: 0.8;
-            }
-
-            10% {
-                opacity: 1;
-            }
-
-            15% {
-                opacity: 0.3;
-            }
-
-            20% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 1;
-            }
-        }
-
-        #start-btn {
-            background: #d32f2f;
-            color: white;
-            border: none;
-            padding: 1rem 3rem;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 50px;
-            box-shadow: 0 0 20px rgba(211, 47, 47, 0.5);
-            transition: transform 0.2s;
-            z-index: 101;
-            /* Clickable */
-            pointer-events: auto;
-        }
-
-        #start-btn:hover {
-            transform: scale(1.1);
-        }
-
-        /* Static Noise Overlay (Hides Related Videos) */
         #static-overlay {
             position: absolute;
             top: 0;
@@ -131,106 +70,180 @@
             width: 100%;
             height: 100%;
             background: url('https://media.giphy.com/media/oEI9uBYSzLpBK/giphy.gif');
-            /* Static noise GIF */
             background-size: cover;
             opacity: 0;
             pointer-events: none;
             z-index: 40;
-            /* Below bezel, above player */
-            transition: opacity 0.2s;
-        }
-
-        /* Error / No Signal Screen */
-        #error-screen {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            color: #fff;
-            z-index: 10;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-
-        .show-error {
-            display: flex !important;
-        }
-
-        /* Remote Control UI */
-        #remote-control {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 200;
-            /* Highest z-index to be clickable */
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 140px;
             transition: opacity 0.3s;
-            opacity: 0.3;
-        }
-
-        #remote-control:hover {
-            opacity: 1;
-        }
-
-        .channel-btn {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ddd;
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            text-align: left;
-            font-weight: bold;
-        }
-
-        .channel-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            color: #fff;
-        }
-
-        .channel-btn.active {
-            background: #d32f2f;
-            color: white;
-        }
-
-        .power-btn {
-            background: #d32f2f;
-            color: white;
-            text-align: center;
-            margin-bottom: 5px;
-        }
-
-        .power-btn:hover {
-            background: #b71c1c;
         }
 
         #osd-display {
             position: absolute;
-            top: 5vh;
-            right: 5vw;
-            font-size: 3vw;
-            font-weight: 900;
+            top: 10%;
+            right: 5%;
+            font-size: 2rem;
+            font-weight: 800;
             color: rgba(255, 255, 255, 0.9);
-            z-index: 15;
-            text-shadow: 2px 2px 4px #000000;
+            z-index: 100;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
             display: none;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 5px 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            backdrop-filter: blur(4px);
+        }
+
+        /* --- NEON REMOTE (CENTERED) --- */
+        #remote-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            padding: 20px;
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+            border-radius: 30px;
+            box-shadow:
+                0 0 30px rgba(0, 0, 0, 0.8),
+                inset 0 0 2px rgba(255, 255, 255, 0.1),
+                0 0 0 1px #222;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        /* Auto-hide remote when playing, show on hover */
+        .tv-playing #remote-container {
+            opacity: 0;
+            transform: translate(-50%, -40%) scale(0.9);
+            pointer-events: none;
+        }
+
+        .tv-playing:hover #remote-container,
+        .tv-playing #remote-container:hover {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        /* Remote "Screen" */
+        .remote-screen {
+            width: 140px;
+            height: 100px;
+            background: #000;
+            border-radius: 15px;
+            border: 2px solid #333;
+            box-shadow:
+                0 0 15px rgba(0, 255, 255, 0.2),
+                inset 0 0 20px rgba(0, 0, 0, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .remote-screen::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 15px;
+            padding: 2px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.8;
+        }
+
+        .remote-icon {
+            font-size: 3rem;
+            color: rgba(255, 255, 255, 0.9);
+            filter: drop-shadow(0 0 5px #ff00ff);
+        }
+
+        /* Power Button */
+        .power-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow:
+                inset 0 0 10px #000,
+                0 0 5px rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .power-wrapper:active {
+            transform: scale(0.95);
+        }
+
+        .power-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #00ffff, #ff00ff);
+            z-index: -1;
+            filter: blur(5px);
+            opacity: 0.6;
+        }
+
+        .power-icon {
+            font-size: 2.5rem;
+            color: #fff;
+            text-shadow: 0 0 10px #ff00ff;
+        }
+
+        /* Instructions */
+        .instructions {
+            text-align: center;
+            color: #666;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .instructions span {
+            display: block;
+            margin-top: 5px;
+            color: #444;
+        }
+
+        /* Status Light */
+        .status-led {
+            width: 8px;
+            height: 8px;
+            background: #333;
+            border-radius: 50%;
+            box-shadow: 0 0 2px #000;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .tv-on .status-led {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 600px) {
+            #remote-container {
+                width: 260px;
+            }
+
+            #osd-display {
+                font-size: 1.5rem;
+                top: 5%;
+            }
         }
     </style>
 </head>
@@ -238,208 +251,228 @@
 <body>
 
     <div id="tv-frame">
-        <!-- Visual Bezel/Frame -->
+        <!-- Visual Bezel -->
         <div id="tv-bezel"></div>
 
-        <!-- Splash Screen (OFF State) -->
-        <div id="splash-screen">
-            <h1>NBA NIGHT TV</h1>
-            <button id="start-btn" onclick="togglePower()">POWER ON</button>
-        </div>
-
-        <!-- Error / Status Messages -->
-        <div id="error-screen">
-            <h1>NO SIGNAL</h1>
-            <p>DOWNLOADING DATA...</p>
-        </div>
-
-        <!-- On Screen Display (Channel/Volume) -->
+        <!-- OSD -->
         <div id="osd-display">CH 01</div>
 
-        <!-- Static Overlay for transitions -->
+        <!-- Static Noise -->
         <div id="static-overlay"></div>
 
-        <!-- Video Player -->
-        <div id="player-div"></div>
+        <!-- Video Players Container -->
+        <div id="players-container">
+            <!-- Players will be injected here -->
+        </div>
 
-        <!-- Remote Control -->
-        <div id="remote-control">
-            <button class="channel-btn power-btn" onclick="togglePower()">⏻ ON/OFF</button>
-            <button class="channel-btn active" onclick="switchChannel(1)">01 NBA</button>
-            <button class="channel-btn" onclick="switchChannel(2)">02 Comedy</button>
-            <button class="channel-btn" onclick="playNextVideo()">⏭ SKIP</button>
+        <!-- Neon Remote -->
+        <div id="remote-container">
+            <div class="remote-screen">
+                <i class="fas fa-basketball-ball remote-icon"></i>
+            </div>
+
+            <div class="instructions">POWER</div>
+
+            <div class="power-wrapper" onclick="togglePower()">
+                <i class="fas fa-power-off power-icon"></i>
+            </div>
+            <div class="status-led" id="led"></div>
+
+            <div class="instructions">
+                POWER ON TO START
+                <span>SWIPE TO CHANGE CHANNEL</span>
+                <span>ARROWS: VOL / CH</span>
+            </div>
         </div>
     </div>
 
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // --- DATA ---
-        let channels = {
-            1: [], // To be loaded from playlist.json
-            2: ['dQw4w9WgXcQ', 'L_jWHffIx5E'] // Backup channel
+        // --- STATE ---
+        let isTVOn = false;
+        let currentChannel = 1;
+        let volume = 100;
+
+        // Channel Data
+        // 1: NBA, 2: Comedy (Backup)
+        let playlistData = {
+            1: [],
+            2: ['dQw4w9WgXcQ', 'L_jWHffIx5E']
         };
 
-        let currentChannelId = 1;
-        let currentVideoIndex = 0;
-        let player;
-        let isTVOn = false;
+        // Player Instances
+        let players = {};
+        let playerStates = { 1: 0, 2: 0 }; // Current video index per channel
 
-        // --- 1. FETCH PLAYLIST ---
-        async function loadPlaylistData() {
-            console.log("Fetching playlist.json from server...");
+        // --- INITIALIZATION ---
+        async function loadPlaylists() {
             try {
-                const response = await fetch('playlist.json?t=' + new Date().getTime());
-                if (!response.ok) throw new Error("File not found");
-                const data = await response.json();
-                if (data["1"] && data["1"].length > 0) {
-                    channels[1] = data["1"];
-                    console.log("Playlist loaded:", channels[1]);
+                const res = await fetch('playlist.json?t=' + Date.now());
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data["1"] && data["1"].length) playlistData[1] = data["1"];
+                    if (data["2"] && data["2"].length) playlistData[2] = data["2"];
                 }
-            } catch (error) {
-                console.warn("Using backup playlist:", error);
-                channels[1] = ['dQw4w9WgXcQ'];
-            }
+            } catch (e) { console.warn("Fetch failed, using defaults"); }
         }
-
-        // --- YOUTUBE API SETUP ---
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         function onYouTubeIframeAPIReady() {
-            loadPlaylistData().then(() => {
-                initPlayer();
+            loadPlaylists().then(() => {
+                createPlayer(1);
+                createPlayer(2);
             });
         }
 
-        function initPlayer() {
-            let startVideo = (channels[1].length > 0) ? channels[1][0] : 'dQw4w9WgXcQ';
-            player = new YT.Player('player-div', {
-                videoId: startVideo,
+        function createPlayer(channelId) {
+            // Create container
+            let div = document.createElement('div');
+            div.id = `player-${channelId}`;
+            div.className = `video-player ${channelId === 1 ? 'active' : ''}`;
+            document.getElementById('players-container').appendChild(div);
+
+            let videoId = playlistData[channelId][0];
+
+            players[channelId] = new YT.Player(`player-${channelId}`, {
+                videoId: videoId,
                 playerVars: {
-                    'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0,
-                    'modestbranding': 1, 'rel': 0, 'iv_load_policy': 3
+                    'autoplay': 1, 'controls': 0, 'disablekb': 1, 'fs': 0,
+                    'modestbranding': 1, 'rel': 0, 'iv_load_policy': 3, 'mute': 1
                 },
                 events: {
-                    'onReady': onPlayerReady,
-                    'onError': onPlayerError,
-                    'onStateChange': onPlayerStateChange
+                    'onReady': (e) => onPlayerReady(channelId, e),
+                    'onStateChange': (e) => onPlayerStateChange(channelId, e)
                 }
             });
+        }
+
+        // --- PLAYER EVENTS ---
+        function onPlayerReady(id, event) {
+            // Mute all initially. logic: only active unmuted IF tv is on.
+            event.target.mute();
+            // Try to verify playback to buffer it, but pause if TV is off.
+            // If we want "Preloading", we let them play muted in background?
+            // User said: "All iframes load... only active has sound".
+            // To save bandwidth/CPU, maybe we pause them immediately after load, 
+            // and only play when TV is ON.
+            // BUT strict requirement: "Transitions... more natural".
+            // Ideally: Play muted loop.
+            event.target.playVideo();
+        }
+
+        function onPlayerStateChange(id, event) {
+            // Loop logic
+            if (event.data === YT.PlayerState.ENDED) {
+                let nextIndex = (playerStates[id] + 1) % playlistData[id].length;
+                playerStates[id] = nextIndex;
+                players[id].loadVideoById(playlistData[id][nextIndex]);
+            }
         }
 
         // --- POWER LOGIC ---
         function togglePower() {
-            let splash = document.getElementById('splash-screen');
+            isTVOn = !isTVOn;
+            let frame = document.getElementById('tv-frame');
+            let led = document.getElementById('led');
 
-            if (!isTVOn) {
-                // TURN ON
-                isTVOn = true;
-                splash.style.opacity = 0;
-                setTimeout(() => splash.style.display = 'none', 500);
-                if (player && player.playVideo) {
-                    player.playVideo();
-                    showOSD("NBA TV");
-                }
+            if (isTVOn) {
+                frame.classList.add('tv-playing');
+                frame.classList.add('tv-on');
+                // Unmute active, ensuring others are muted
+                updateAudioState();
+                showOSD("POWER ON");
             } else {
-                // TURN OFF
-                isTVOn = false;
-                splash.style.display = 'flex';
-                setTimeout(() => splash.style.opacity = 1, 10); // Fade in
-                if (player && player.stopVideo) {
-                    player.stopVideo(); // Stop playback
+                frame.classList.remove('tv-playing');
+                frame.classList.remove('tv-on');
+                // Mute all
+                Object.values(players).forEach(p => p && p.mute && p.mute());
+            }
+        }
+
+        function updateAudioState() {
+            if (!isTVOn) return;
+            Object.keys(players).forEach(key => {
+                let p = players[key];
+                if (p && p.unMute) {
+                    if (parseInt(key) === currentChannel) {
+                        p.unMute();
+                        p.setVolume(volume);
+                    } else {
+                        p.mute();
+                    }
                 }
-                document.getElementById('start-btn').innerText = "POWER ON";
-            }
+            });
         }
 
-        // --- EVENT HANDLERS ---
-        function onPlayerReady(event) {
-            // Ready, waiting for user to click POWER ON
-        }
-
-        function onPlayerStateChange(event) {
-            if (event.data === YT.PlayerState.ENDED) {
-                showStatic();
-                playNextVideo();
-            }
-            if (event.data === YT.PlayerState.PLAYING) {
-                hideStatic();
-            }
-        }
-
-        function onPlayerError(event) {
-            if ([100, 101, 150].includes(event.data)) {
-                toggleErrorMode(true);
-                setTimeout(() => { playNextVideo(); }, 1500);
-            }
-        }
-
-        // --- LOGIC ---
-        function playNextVideo() {
+        // --- CONTROLS ---
+        function switchChannel(direction) { // 1 for next, -1 for prev
             if (!isTVOn) return;
-            currentVideoIndex++;
-            if (currentVideoIndex >= channels[currentChannelId].length) currentVideoIndex = 0;
-            if (player && player.loadVideoById) {
+
+            let oldCh = currentChannel;
+            if (direction > 0) currentChannel = 2; // Simple toggle for 2 channels
+            else currentChannel = 1;
+
+            if (oldCh !== currentChannel) {
+                // Visual Swap
                 showStatic();
-                player.loadVideoById(channels[currentChannelId][currentVideoIndex]);
-                toggleErrorMode(false);
+                setTimeout(() => {
+                    document.getElementById(`player-${oldCh}`).classList.remove('active');
+                    document.getElementById(`player-${currentChannel}`).classList.add('active');
+                    updateAudioState();
+                    hideStatic();
+                    let name = currentChannel === 1 ? "NBA" : "COMEDY";
+                    showOSD(`CH 0${currentChannel} ${name}`);
+                }, 300);
             }
         }
 
-        function switchChannel(id) {
+        function adjustVolume(delta) {
             if (!isTVOn) return;
-            currentChannelId = id;
-            currentVideoIndex = 0;
-            let channelName = id === 1 ? "CH 01: NBA" : "CH 02: COMEDY";
-            showOSD(channelName);
-
-            if (player) {
-                showStatic();
-                setTimeout(() => player.loadVideoById(channels[id][0]), 300);
-            }
-        }
-
-        function adjustVolume(change) {
-            if (!isTVOn || !player || !player.getVolume) return;
-            let currentVol = player.getVolume();
-            let newVol = Math.max(0, Math.min(100, currentVol + change));
-            player.setVolume(newVol);
-            showOSD("VOL: " + newVol + "%");
-        }
-
-        // --- UI HELPERS ---
-        function showStatic() { document.getElementById('static-overlay').style.opacity = 0.5; }
-        function hideStatic() { document.getElementById('static-overlay').style.opacity = 0; }
-
-        function toggleErrorMode(show) {
-            document.getElementById('error-screen').classList.toggle('show-error', show);
-            document.getElementById('player-div').style.visibility = show ? 'hidden' : 'visible';
+            volume = Math.max(0, Math.min(100, volume + delta));
+            if (players[currentChannel]) players[currentChannel].setVolume(volume);
+            showOSD(`VOL ${volume}%`);
         }
 
         function showOSD(text) {
-            let el = document.getElementById('osd-display');
-            el.innerText = text;
-            el.style.display = 'block';
-
-            // Reset animation logic if you want simple fade, but timeout works fine
-            if (window.osdTimeout) clearTimeout(window.osdTimeout);
-            window.osdTimeout = setTimeout(() => el.style.display = 'none', 2500);
+            let osd = document.getElementById('osd-display');
+            osd.innerText = text;
+            osd.style.display = 'block';
+            if (window.osdTimer) clearTimeout(window.osdTimer);
+            window.osdTimer = setTimeout(() => osd.style.display = 'none', 2000);
         }
 
-        // --- KEYBOARD CONTROLS ---
-        document.addEventListener('keydown', function (event) {
-            if (event.key === ' ' || event.key === 'Enter') togglePower();
+        function showStatic() { document.getElementById('static-overlay').style.opacity = 0.4; }
+        function hideStatic() { document.getElementById('static-overlay').style.opacity = 0; }
+
+        // --- INPUT HANDLING ---
+
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'Enter') togglePower();
             if (!isTVOn) return;
 
-            // Channel switching (Up/Down)
-            if (event.key === 'ArrowUp') switchChannel(1);
-            if (event.key === 'ArrowDown') switchChannel(2);
-
-            // Volume controls (Left/Right)
-            if (event.key === 'ArrowRight') adjustVolume(10);
-            if (event.key === 'ArrowLeft') adjustVolume(-10);
+            if (e.code === 'ArrowUp') switchChannel(1);
+            if (e.code === 'ArrowDown') switchChannel(-1);
+            if (e.code === 'ArrowRight') adjustVolume(10);
+            if (e.code === 'ArrowLeft') adjustVolume(-10);
         });
+
+        // Touch / Swipe
+        let touchStartY = 0;
+        document.addEventListener('touchstart', e => {
+            touchStartY = e.touches[0].clientY;
+        }, { passive: false });
+
+        document.addEventListener('touchend', e => {
+            if (!isTVOn) return;
+            let touchEndY = e.changedTouches[0].clientY;
+            let diff = touchStartY - touchEndY;
+
+            if (Math.abs(diff) > 50) { // Threshold
+                if (diff > 0) switchChannel(1); // Swipe Up -> Next
+                else switchChannel(-1);        // Swipe Down -> Prev
+            }
+        }, { passive: false });
+
     </script>
 </body>
 
