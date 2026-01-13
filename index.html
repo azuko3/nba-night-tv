@@ -275,6 +275,36 @@
         disp.style.display = 'block';
         setTimeout(() => { disp.style.display = 'none'; }, 3000);
     }
+    
+    // --- KEYBOARD CONTROL (TV REMOTE) ---
+    
+    document.addEventListener('keydown', function(event) {
+        // מונע גלילה של הדף עם החצים
+        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(event.code) > -1) {
+            event.preventDefault();
+        }
+
+        const totalChannels = Object.keys(channels).length;
+        
+        // חץ למעלה / ימינה = ערוץ הבא
+        if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
+            let nextChannel = currentChannelId + 1;
+            if (nextChannel > totalChannels) nextChannel = 1; // חוזר להתחלה
+            switchChannel(nextChannel);
+        }
+        
+        // חץ למטה / שמאלה = ערוץ קודם
+        if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') {
+            let prevChannel = currentChannelId - 1;
+            if (prevChannel < 1) prevChannel = totalChannels; // הולך לסוף
+            switchChannel(prevChannel);
+        }
+
+        // מקש F = מסך מלא
+        if (event.key === 'f' || event.key === 'F') {
+            toggleFullScreen();
+        }
+    });
 
 </script>
 </body>
