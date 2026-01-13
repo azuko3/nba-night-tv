@@ -44,6 +44,64 @@
             background: transparent;
         }
 
+        /* Splash Screen */
+        #splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: #fff;
+            transition: opacity 0.5s;
+        }
+
+        #splash-screen h1 {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            letter-spacing: 5px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        #start-btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 50px;
+            box-shadow: 0 0 20px rgba(211, 47, 47, 0.5);
+            transition: transform 0.2s;
+        }
+
+        #start-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Static Noise Overlay (Hides Related Videos) */
+        #static-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://media.giphy.com/media/oEI9uBYSzLpBK/giphy.gif');
+            /* Static noise GIF */
+            background-size: cover;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 6;
+            /* Above player, below UI */
+            transition: opacity 0.2s;
+        }
+
         /* Error / No Signal Screen */
         #error-screen {
             display: none;
@@ -125,12 +183,21 @@
 <body>
 
     <div id="tv-frame">
+        <!-- Splash Screen -->
+        <div id="splash-screen">
+            <h1>NBA NIGHT TV</h1>
+            <button id="start-btn" onclick="startTV()">POWER ON</button>
+        </div>
+
         <div id="channel-display">CH 01</div>
 
         <div id="error-screen">
             <h1>NO SIGNAL</h1>
             <p>DOWNLOADING DATA...</p>
         </div>
+
+        <!-- Static Overlay for transitions -->
+        <div id="static-overlay"></div>
 
         <div id="tv-glass"></div>
 
@@ -155,6 +222,7 @@
         let currentChannelId = 1;
         let currentVideoIndex = 0;
         let player;
+        let isTVOn = false;
 
         // --- 1. FETCH PLAYLIST (FROM LOCAL JSON FILE) ---
         async function loadPlaylistData() {
@@ -185,7 +253,7 @@
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         function onYouTubeIframeAPIReady() {
-            // Load data first, then initialize player
+            // Load data first, then initialize player (but keep hidden until Start)
             loadPlaylistData().then(() => {
                 initPlayer();
             });
@@ -198,12 +266,13 @@
             player = new YT.Player('player-div', {
                 videoId: startVideo,
                 playerVars: {
-                    'autoplay': 1,
+                    'autoplay': 0,      // Wait for user interaction
                     'controls': 0,
                     'disablekb': 1,
                     'fs': 0,
                     'modestbranding': 1,
-                    'rel': 0
+                    'rel': 0,
+                    'iv_load_policy': 3 // Hide annotations
                 },
                 events: {
                     'onReady': onPlayerReady,
@@ -213,14 +282,31 @@
             });
         }
 
+        // --- USER INTERACTION START ---
+        function startTV() {
+            isTVOn = true;
+            document.getElementById('splash-screen').style.opacity = 0;
+            setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 500);
+
+            if (player && player.playVideo) {
+                player.playVideo();
+                showChannelDisplay("NBA TV");
+            }
+        }
+
         // --- EVENT HANDLERS ---
         function onPlayerReady(event) {
-            event.target.playVideo();
-            showChannelDisplay("NBA TV");
+            // Do nothing until startTV() is called
         }
 
         function onPlayerStateChange(event) {
-            if (event.data === YT.PlayerState.ENDED) playNextVideo();
+            if (event.data === YT.PlayerState.ENDED) {
+                showStatic();
+                playNextVideo();
+            }
+            if (event.data === YT.PlayerState.PLAYING) {
+                hideStatic();
+            }
         }
 
         function onPlayerError(event) {
@@ -237,24 +323,33 @@
             if (currentVideoIndex >= channels[currentChannelId].length) currentVideoIndex = 0;
 
             if (player && player.loadVideoById) {
+                showStatic(); // Mask transition
                 player.loadVideoById(channels[currentChannelId][currentVideoIndex]);
                 toggleErrorMode(false);
             }
         }
 
         function switchChannel(id) {
+            if (!isTVOn) return;
             currentChannelId = id;
             currentVideoIndex = 0;
             showChannelDisplay(id === 1 ? "NBA" : "COMEDY");
 
             if (player) {
-                toggleErrorMode(true);
-                setTimeout(() => player.loadVideoById(channels[id][0]), 500);
-                setTimeout(() => toggleErrorMode(false), 1000);
+                showStatic(); // Mask transition
+                setTimeout(() => player.loadVideoById(channels[id][0]), 300);
             }
         }
 
         // --- UI HELPERS ---
+        function showStatic() {
+            document.getElementById('static-overlay').style.opacity = 0.5;
+        }
+
+        function hideStatic() {
+            document.getElementById('static-overlay').style.opacity = 0;
+        }
+
         function toggleErrorMode(show) {
             document.getElementById('error-screen').classList.toggle('show-error', show);
             document.getElementById('player-div').style.visibility = show ? 'hidden' : 'visible';
@@ -277,6 +372,7 @@
 
         // --- KEYBOARD CONTROLS ---
         document.addEventListener('keydown', function (event) {
+            if (!isTVOn) return;
             if (event.key === 'ArrowRight' || event.key === 'ArrowUp') switchChannel(1);
             if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') switchChannel(2);
         });
