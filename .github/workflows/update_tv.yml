@@ -1,0 +1,30 @@
+name: Update NBA TV
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - run: pip install -r requirements.txt
+      - name: Restore Backup
+        continue-on-error: true
+        run: curl -f -o manifest.last_good.json https://raw.githubusercontent.com/${{ github.repository }}/gh-pages/manifest.last_good.json || echo "No backup"
+      - name: Run Script
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          python generator.py --api-key "$YOUTUBE_API_KEY" --channel-id "UCWJ2lWNubArHWmf3FIMufdQ"
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: .
+          clean: true

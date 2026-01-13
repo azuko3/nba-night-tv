@@ -1,0 +1,47 @@
+{
+    "meta": {
+        "generated_at": "2023-10-27T10:00:00+00:00",
+        "active_day": "2023-10-26",
+        "is_dark": false
+    },
+    "channels": {
+        "recap": [
+            {
+                "id": "9KI-T7178Lg",
+                "title": "Game Recap 1",
+                "duration": 300
+            },
+            {
+                "id": "J0Gf8K8e6M0",
+                "title": "Game Recap 2",
+                "duration": 300
+            }
+        ],
+        "action": [
+            {
+                "id": "roO8XmGk74o",
+                "title": "Top 10 Plays",
+                "duration": 200
+            },
+            {
+                "id": "ntJg5y8R12U",
+                "title": "Dunk of Night",
+                "duration": 60
+            }
+        ],
+        "inside": [
+            {
+                "id": "p7b5wST6R5s",
+                "title": "Shaqtin",
+                "duration": 180
+            }
+        ],
+        "vault": [
+            {
+                "id": "nsjN212I-Gs",
+                "title": "Classic Game",
+                "duration": 2000
+            }
+        ]
+    }
+}
