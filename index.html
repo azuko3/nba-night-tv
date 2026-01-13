@@ -40,14 +40,28 @@
             height: 100%;
             pointer-events: none;
             opacity: 0;
-            /* Hidden by default */
+            /* Hidden by default, strictly enforced by parent state below */
+            opacity: 0;
             transition: opacity 0.5s ease-in-out;
             z-index: 1;
         }
 
-        .video-player.active {
+        /* STRICT VISIBILITY LOGIC */
+        /* Only show active player IF the TV is actually ON */
+        #tv-frame.tv-on .video-player.active {
             opacity: 1;
             z-index: 2;
+        }
+
+        /* If TV is OFF, force ALL players hidden */
+        #tv-frame:not(.tv-on) .video-player {
+            opacity: 0 !important;
+            visibility: hidden;
+        }
+
+        /* Legacy rule removal/update */
+        .video-player.active {
+            /* No longer sufficient on its own */
         }
 
         /* --- UI LAYERS --- */
@@ -94,10 +108,78 @@
             backdrop-filter: blur(4px);
         }
 
+        /* --- SPLASH SCREEN TITLE --- */
+        #splash-title {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 200;
+            transition: opacity 0.5s, transform 0.5s;
+            pointer-events: none;
+        }
+
+        #splash-title span {
+            display: block;
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 10px;
+            text-shadow:
+                0 0 10px #00ffff,
+                0 0 20px #00ffff,
+                0 0 40px #00ffff,
+                0 0 80px #00ffff;
+            animation: flicker 4s infinite alternate;
+        }
+
+        #splash-title span:nth-child(2) {
+            color: #ff00ff;
+            text-shadow:
+                0 0 10px #ff00ff,
+                0 0 20px #ff00ff,
+                0 0 40px #ff00ff,
+                0 0 80px #ff00ff;
+            font-size: 6rem;
+            /* Slightly larger "NIGHT" */
+        }
+
+        /* Auto-hide Title when playing */
+        .tv-playing #splash-title {
+            opacity: 0;
+            transform: translate(-50%, -60%) scale(1.1);
+        }
+
+        @keyframes flicker {
+
+            0%,
+            18%,
+            22%,
+            25%,
+            53%,
+            57%,
+            100% {
+                opacity: 1;
+                filter: blur(0px);
+            }
+
+            20%,
+            24%,
+            55% {
+                opacity: 0.8;
+                filter: blur(1px);
+            }
+        }
+
         /* --- NEON REMOTE (CENTERED) --- */
         #remote-container {
             position: absolute;
-            top: 50%;
+            position: absolute;
+            top: 65%;
+            /* Moved down to make room for title */
             left: 50%;
             transform: translate(-50%, -50%);
             width: 300px;
@@ -263,6 +345,13 @@
         <!-- Video Players Container -->
         <div id="players-container">
             <!-- Players will be injected here -->
+        </div>
+
+        <!-- Splash Screen Elements (Title & Remote) -->
+        <div id="splash-title">
+            <span>NBA</span>
+            <span>NIGHT</span>
+            <span>TV</span>
         </div>
 
         <!-- Neon Remote -->
