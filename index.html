@@ -35,13 +35,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 20;
-            /* Above player */
+            z-index: 50;
+            /* High Z-index to overlay video */
             pointer-events: none;
             /* Let clicks pass through */
-            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9), inset 0 0 10px 2px rgba(0, 50, 200, 0.3);
-            /* Subtle blue glow/frame */
-            border: 5px solid #222;
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.95), inset 0 0 20px 5px rgba(0, 80, 255, 0.5);
+            /* Stronger blue glow */
+            border: 8px solid #111;
+            /* Thicker dark border */
         }
 
         #player-div {
@@ -134,8 +135,8 @@
             background-size: cover;
             opacity: 0;
             pointer-events: none;
-            z-index: 6;
-            /* Above player, below UI */
+            z-index: 40;
+            /* Below bezel, above player */
             transition: opacity 0.2s;
         }
 
@@ -262,8 +263,6 @@
             <button class="channel-btn active" onclick="switchChannel(1)">01 NBA</button>
             <button class="channel-btn" onclick="switchChannel(2)">02 Comedy</button>
             <button class="channel-btn" onclick="playNextVideo()">⏭ SKIP</button>
-            <button class="channel-btn" style="font-size: 0.8rem; opacity: 0.7;" onclick="toggleFullScreen()">[ ]
-                Fullscreen</button>
         </div>
     </div>
 
@@ -409,14 +408,6 @@
             el.innerText = text;
             el.style.display = 'block';
             setTimeout(() => el.style.display = 'none', 3000);
-        }
-
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(e => console.log(e));
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
         }
 
         // --- KEYBOARD CONTROLS ---
