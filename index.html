@@ -296,7 +296,7 @@
         // Channel Data
         // 1: NBA, 2: Comedy (Backup)
         let playlistData = {
-            1: [],
+            1: ['_nxTNmM9lfY'], // Default fallback if fetch fails
             2: ['dQw4w9WgXcQ', 'L_jWHffIx5E']
         };
 
@@ -396,6 +396,7 @@
                     if (parseInt(key) === currentChannel) {
                         p.unMute();
                         p.setVolume(volume);
+                        if (typeof p.playVideo === 'function') p.playVideo(); // Force play on interaction (for mobile)
                     } else {
                         p.mute();
                     }
