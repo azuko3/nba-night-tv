@@ -198,19 +198,46 @@
             transition: opacity 0.5s, transform 0.5s;
         }
 
-        /* Auto-hide remote when playing, show on hover */
+        /* Mini Remote State (When Playing) */
         .tv-playing #remote-container {
-            opacity: 0;
-            transform: translate(-50%, -40%) scale(0.9);
-            pointer-events: none;
+            /* Dock to Top-Left */
+            top: 20px;
+            left: 20px;
+            transform: scale(0.6);
+            /* Shrink significantly */
+            transform-origin: top left;
+            /* Anchor to corner */
+            opacity: 0.3;
+            /* Ghosted */
+            pointer-events: auto;
+            /* Still clickable */
+            background: rgba(26, 26, 26, 0.8);
+            /* More transparent bg */
         }
 
-        .tv-playing:hover #remote-container,
+        /* Hover behavior for Mini Remote */
         .tv-playing #remote-container:hover {
             opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-            pointer-events: auto;
+            transform: scale(0.65);
+            /* Slight pop on hover */
+            background: #1a1a1a;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
         }
+
+        /* Clean up clutter in Mini Mode */
+        .tv-playing .instructions {
+            display: none;
+        }
+
+        /* Adjust remote screen in mini mode for better visibility */
+        .tv-playing .remote-screen {
+            height: 60px;
+            /* Compress height */
+            margin-bottom: 5px;
+        }
+
+        /* Initial State (Centered) */
+        /* See #remote-container definition above */
 
         /* Remote "Screen" */
         .remote-screen {
