@@ -3,186 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Skip Video Player</title>
+    <title>Auto-Skip Player (Final Version)</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            background-color: #000; /* Dark background like a TV interface */
+            background-color: #000;
             color: #fff;
-            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            font-family: Arial, sans-serif;
         }
 
         #video-container {
             position: relative;
-            width: 80%;
-            max-width: 800px;
-            aspect-ratio: 16 / 9;
-            background-color: #111;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            width: 800px;
+            height: 450px; /* 16:9 Aspect Ratio */
+            background: #111;
+            overflow: hidden; /* Ensures nothing spills out */
         }
 
-        /* The actual iframe container */
-        #player {
+        /* The actual YouTube Player */
+        #player-div {
             width: 100%;
             height: 100%;
         }
 
-        /* Overlay for status messages (optional, visible during transitions) */
-        #status-overlay {
+        /* The Error/Snow Screen */
+        #error-screen {
+            display: none; /* Hidden by default */
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            display: none; /* Hidden by default */
+            background-color: black; /* Placeholder for Snow GIF later */
+            color: white;
+            z-index: 10;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            background-color: #000;
-            z-index: 10;
+            text-align: center;
+        }
+
+        /* Helper class to toggle the error screen */
+        .show-error {
+            display: flex !important;
         }
     </style>
 </head>
 <body>
 
-    <div id="video-container">
-        <div id="status-overlay">
-            <p id="status-text">Loading...</p>
-        </div>
-
-        <div id="player"></div>
+<div id="video-container">
+    <div id="error-screen">
+        <h2>SIGNAL LOST</h2>
+        <p>(Simulating Static Noise...)</p>
     </div>
 
-    <script>
-        // --- CONFIGURATION ---
-        
-        // 1. Define your playlist (Array of YouTube Video IDs)
-        // You can fetch this from an API or a database later.
-        const playlist = [
-            'dQw4w9WgXcQ',   // Video 1: Rick Astley (Working)
-            'INVALID_ID_XX', // Video 2: Intentionally broken ID to test Error Skipping
-            'M7lc1UVf-VE',   // Video 3: YouTube Developers (Working)
-            'tgbNymZ7vqY'    // Video 4: Muppets (Working)
-        ];
+    <div id="player-div"></div>
+</div>
 
-        let currentVideoIndex = 0;
-        let player;
-        let isSkipping = false; // Flag to prevent double skipping
+<script>
+    // --- CONFIGURATION ---
+    
+    // Playlist: 
+    // ID 1: Working
+    // ID 2: BROKEN (Will trigger the skip logic)
+    // ID 3: Working
+    var playlist = [
+        'dQw4w9WgXcQ',   
+        'BROKEN_ID_123', 
+        'tgbNymZ7vqY'    
+    ];
 
-        // --- YOUTUBE API SETUP ---
+    var currentVideoIndex = 0;
+    var player;
+    
+    // --- YOUTUBE API SETUP ---
+    
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-        // 2. Load the IFrame Player API code asynchronously.
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player-div', {
+            videoId: playlist[currentVideoIndex],
+            playerVars: {
+                'autoplay': 1,
+                'controls': 1,
+                'rel': 0
+            },
+            events: {
+                'onReady': onPlayerReady,
+                'onError': onPlayerError,       // CRITICAL: Handles the blocks
+                'onStateChange': onPlayerStateChange // CRITICAL: Handles normal ending
+            }
+        });
+    }
 
-        // 3. This function creates an <iframe> (and YouTube player)
-        //    after the API code downloads.
-        function onYouTubeIframeAPIReady() {
-            console.log("API Ready. Initializing player...");
-            player = new YT.Player('player', {
-                height: '100%',
-                width: '100%',
-                videoId: playlist[currentVideoIndex],
-                playerVars: {
-                    'playsinline': 1,
-                    'autoplay': 1,      // Try to autoplay
-                    'controls': 1,      // Show controls
-                    'rel': 0            // Do not show related videos at the end
-                },
-                events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange,
-                    'onError': onPlayerError 
-                }
-            });
+    // --- EVENT HANDLERS ---
+
+    function onPlayerReady(event) {
+        console.log("Player ready. Starting video.");
+        event.target.playVideo();
+    }
+
+    // Handle normal video ending (when video finishes naturally)
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.ENDED) {
+            console.log("Video ended naturally.");
+            playNextVideo();
         }
+    }
 
-        // --- EVENT HANDLERS ---
+    // Handle Errors (Region block, deleted video, etc.)
+    function onPlayerError(event) {
+        // Error Codes: 100, 101, 150 = Video not found or Blocked
+        if ([100, 101, 150].includes(event.data)) {
+            console.log("Error detected (Code " + event.data + "). Initiating skip sequence.");
+            
+            // Step 1: Hide the player & Show Error Screen
+            // This ensures we NEVER see the YouTube suggestions
+            toggleErrorMode(true);
 
-        // 4. The API will call this function when the video player is ready.
-        function onPlayerReady(event) {
-            console.log("Player Ready. Playing video index: " + currentVideoIndex);
-            event.target.playVideo();
-        }
-
-        // 5. The API calls this function when the player's state changes.
-        //    (e.g., playing, paused, ended)
-        function onPlayerStateChange(event) {
-            // YT.PlayerState.ENDED = 0
-            if (event.data === YT.PlayerState.ENDED) {
-                console.log("Video ended naturally. Moving to next...");
+            // Step 2: Wait 3 seconds (simulating static noise), then skip
+            setTimeout(function() {
                 playNextVideo();
-            }
+            }, 3000); 
         }
+    }
 
-        // 6. The API calls this function when an error occurs.
-        //    This is the critical part for skipping blocked videos.
-        function onPlayerError(event) {
-            const errorCode = event.data;
-            console.warn(`Error detected! Code: ${errorCode}`);
+    // --- LOGIC ---
 
-            // Error Codes:
-            // 2   – The request contains an invalid parameter value.
-            // 5   – The requested content cannot be played in an HTML5 player.
-            // 100 – The video requested was not found.
-            // 101 – The owner of the requested video does not allow it to be played in embedded players.
-            // 150 – This is the same as 101.
+    function playNextVideo() {
+        currentVideoIndex++;
 
-            if (!isSkipping) {
-                console.log("Bad video detected. Initiating auto-skip...");
-                showOverlay("Signal Lost. Searching..."); // Future: Trigger Snow Sound here
-                
-                // Small delay to ensure the UI updates before switching
-                setTimeout(() => {
-                    playNextVideo();
-                }, 1000); 
-            }
+        if (currentVideoIndex < playlist.length) {
+            console.log("Loading next video: " + playlist[currentVideoIndex]);
+            
+            // Load the new video
+            player.loadVideoById(playlist[currentVideoIndex]);
+            
+            // Hide the error screen and show player again
+            toggleErrorMode(false);
+        } else {
+            console.log("End of playlist.");
         }
+    }
 
-        // --- LOGIC ---
+    // Helper function to swap between Video and Error Screen
+    function toggleErrorMode(isError) {
+        var errorScreen = document.getElementById('error-screen');
+        var playerDiv = document.getElementById('player-div');
 
-        function playNextVideo() {
-            isSkipping = true;
-            currentVideoIndex++;
-
-            // Check if we have more videos in the playlist
-            if (currentVideoIndex < playlist.length) {
-                console.log(`Loading next video ID: ${playlist[currentVideoIndex]}`);
-                
-                // Load the new video
-                player.loadVideoById(playlist[currentVideoIndex]);
-                
-                // Hide the overlay once the new video starts loading
-                hideOverlay();
-                isSkipping = false;
-            } else {
-                console.log("Playlist finished.");
-                showOverlay("No Signal. Playlist Ended.");
-                // Option: Loop back to start
-                // currentVideoIndex = -1; playNextVideo();
-            }
+        if (isError) {
+            // Hide player completely so no UI is seen
+            playerDiv.style.visibility = 'hidden'; 
+            // Show error screen
+            errorScreen.classList.add('show-error');
+        } else {
+            // Show player
+            playerDiv.style.visibility = 'visible';
+            // Hide error screen
+            errorScreen.classList.remove('show-error');
         }
+    }
 
-        // --- UI HELPERS ---
+</script>
 
-        function showOverlay(message) {
-            const overlay = document.getElementById('status-overlay');
-            const text = document.getElementById('status-text');
-            text.innerText = message;
-            overlay.style.display = 'flex';
-        }
-
-        function hideOverlay() {
-            const overlay = document.getElementById('status-overlay');
-            overlay.style.display = 'none';
-        }
-
-    </script>
 </body>
 </html>
