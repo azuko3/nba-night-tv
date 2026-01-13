@@ -508,31 +508,31 @@
             players[channelId][slot] = new YT.Player(divId, {
                 videoId: videoId,
                 playerVars: {
-                    'autoplay': 1, 'controls': 0, 'disablekb': 1, 'fs': 0,
-                    'modestbranding': 1, 'rel': 0, 'iv_load_policy': 3, 'mute': 1
+                    'autoplay': 1,
+                    'controls': 0,
+                    'disablekb': 1,
+                    'fs': 0,
+                    'modestbranding': 1,
+                    'rel': 0,
+                    'iv_load_policy': 3, // Strict: Hide video annotations
+                    'mute': 1
                 },
                 events: {
                     'onReady': (e) => {
                         e.target.mute(); // Always start muted
-                        // If it's the very first video of CH1, consistent with logic:
+
+                        // If it's the very first video of default channel (CH1), play with sound if TV ON
                         if (isTVOn && channelId === currentChannel && slot === channelState[channelId].activeSlot) {
                             e.target.unMute();
                             e.target.setVolume(volume);
                         }
+
                         e.target.playVideo();
-                        // Note: For Background (Slot B), it will play muted. 
-                        // Logic below ensures it pauses or loops if needed, 
-                        // but user specifically asked for "starts playing -1 before current ends".
-                        // Use pauseVideo() immediately for 'B' if we want to wait?
-                        // Actually, 'B' (next) should ideally be PAUSED at 0:00 until the trigger.
-                        if (!isInitiallyActive) {
-                            // Wait a bit for it to buffer then pause? 
-                            // Simply pausing immediately onReady works for preloading usually.
-                            setTimeout(() => e.target.pauseVideo(), 1000);
-                        }
+                        // FIX: Removed the "pauseVideo" timeout. 
+                        // User wants background channels to run continuously in the background (muted).
                     },
                     'onStateChange': (e) => {
-                        // We rely mostly on polling for transitions, but we handle looping here if needed
+                        // Poller handles transitions
                     }
                 }
             });
@@ -556,14 +556,11 @@
                     if (duration > 0) {
                         let timeLeft = duration - now;
 
-                        // 1. Trigger "Next" Start (1 second before end)
-                        // channelState.nextPrepared prevents double triggering
+                        // 1. Trigger "Next" Start (1.5 second before end)
                         if (timeLeft <= 1.5 && !chState.nextPrepared) {
-                            // Prepare Next Slot
                             let nextSlot = currentSlot === 'A' ? 'B' : 'A';
                             let nextPlayer = players[currentChannel][nextSlot];
 
-                            // Start next video muted
                             if (nextPlayer) {
                                 nextPlayer.mute();
                                 nextPlayer.playVideo();
@@ -573,13 +570,12 @@
                         }
 
                         // 2. The Swap (At End)
-                        // Use a small buffer (0.2s) instead of 0 to avoid black frame
                         if (timeLeft <= 0.2) {
                             performSwap(currentChannel);
                         }
                     }
                 }
-            }, 200); // Check 5 times a second
+            }, 200);
         }
 
         function performSwap(channelId) {
@@ -591,12 +587,10 @@
             let newPlayer = players[channelId][newSlot];
 
             // 1. Visual Swap
-            // document.getElementById(`player-${channelId}-${oldSlot}`).classList.remove('active'); // Wait a moment?
-            // Actually, just make NEW active (z-index higher) then hide old
             let newDiv = document.getElementById(`player-${channelId}-${newSlot}`);
             let oldDiv = document.getElementById(`player-${channelId}-${oldSlot}`);
 
-            newDiv.classList.add('active'); // Visible
+            newDiv.classList.add('active');
 
             // 2. Audio Swap
             if (channelId === currentChannel && isTVOn) {
@@ -604,23 +598,23 @@
                 newPlayer.setVolume(volume);
             }
             oldPlayer.mute();
-            oldDiv.classList.remove('active'); // Hide old
+            oldDiv.classList.remove('active');
 
             // 3. Update State
             chState.activeSlot = newSlot;
             chState.videoIndex = (chState.videoIndex + 1) % playlistData[channelId].length;
-            chState.nextPrepared = false; // Reset flag for next cycle
+            chState.nextPrepared = false;
 
             // 4. Recycle Old Player (Load Next+1)
             let nextNextIndex = (chState.videoIndex + 1) % playlistData[channelId].length;
             let nextNextId = playlistData[channelId][nextNextIndex];
 
-            // Give it a moment to finish smoothly, then reset
             setTimeout(() => {
                 oldPlayer.stopVideo();
                 oldPlayer.loadVideoById(nextNextId);
-                // Pause it so it waits for its turn
-                setTimeout(() => oldPlayer.pauseVideo(), 1000);
+                // Background players just play (muted)
+                oldPlayer.playVideo();
+                oldPlayer.mute();
             }, 1000);
         }
 
@@ -642,7 +636,11 @@
             } else {
                 frame.classList.remove('tv-playing');
                 frame.classList.remove('tv-on');
-                // Mute/Pause all
+                // Mute all (but let them run or pause? User typically expects TV off = Silence)
+                // We will MUTE them so they don't blast sound, but maybe keep running?
+                // Usually Smart TVs pause content. Let's Pause to save bandwidth?
+                // User said "Start straight away... run behind".
+                // I'll just MUTE all.
                 for (let c in players) {
                     if (players[c].A) players[c].A.mute();
                     if (players[c].B) players[c].B.mute();
@@ -654,16 +652,26 @@
         function switchChannel(direction) {
             if (!isTVOn) return;
 
-            // Mute Current
             let oldCh = currentChannel;
-            let oldSlot = channelState[oldCh].activeSlot;
-            players[oldCh][oldSlot].mute();
 
-            // Change State
-            if (direction > 0) currentChannel = 2;
-            else currentChannel = 1;
+            // Generic Looping Logic
+            // Assuming channels are 1 and 2. 
+            // 1 -> 2 -> 1
+            if (direction > 0) {
+                // Next
+                currentChannel = (currentChannel === 1) ? 2 : 1;
+            } else {
+                // Prev
+                currentChannel = (currentChannel === 1) ? 2 : 1;
+            }
 
+            // Only execute switch if channel actually changed (always true for 2 channels, but safe generic)
             if (oldCh !== currentChannel) {
+
+                // Mute Old Channel FIRST
+                let oldSlot = channelState[oldCh].activeSlot;
+                players[oldCh][oldSlot].mute();
+
                 showStatic();
                 setTimeout(() => {
                     // Hide Old Channel Visuals
