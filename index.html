@@ -463,6 +463,12 @@
 
         let pollInterval = null;
 
+        // Channel Data & Config
+        let channelConfig = {
+            1: { trimEnd: 11 }, // Cut 11 seconds from end (for NBA info cards)
+            2: { trimEnd: 0 }
+        };
+
         // --- INITIALIZATION ---
         async function loadPlaylists() {
             try {
@@ -528,8 +534,15 @@
                         }
 
                         e.target.playVideo();
-                        // FIX: Removed the "pauseVideo" timeout. 
-                        // User wants background channels to run continuously in the background (muted).
+
+                        // FIX: Pause background players so they don't run out!
+                        // Only the active slot of the active channel should run immediately.
+                        // Background players (Slot B or inactive channels) should buffer then pause.
+                        if (!isInitiallyActive) {
+                            setTimeout(() => {
+                                e.target.pauseVideo();
+                            }, 1500); // Allow 1.5s buffering then FREEZE
+                        }
                     },
                     'onStateChange': (e) => {
                         // Poller handles transitions
@@ -554,23 +567,31 @@
                     let duration = activePlayer.getDuration();
 
                     if (duration > 0) {
-                        let timeLeft = duration - now;
+                        // Calculate Trigger Points
+                        let trim = (channelConfig[currentChannel] && channelConfig[currentChannel].trimEnd) || 0;
+                        // Minimum safety buffer of 0.2s if trim is 0
+                        if (trim === 0) trim = 0.2;
 
-                        // 1. Trigger "Next" Start (1.5 second before end)
-                        if (timeLeft <= 1.5 && !chState.nextPrepared) {
+                        let swapPoint = duration - trim;
+                        let preStartPoint = swapPoint - 2; // Start next video 2s before swap
+
+                        // 1. Trigger "Next" Start
+                        if (now >= preStartPoint && !chState.nextPrepared) {
+                            // Prepare Next Slot
                             let nextSlot = currentSlot === 'A' ? 'B' : 'A';
                             let nextPlayer = players[currentChannel][nextSlot];
 
+                            // Start next video muted
                             if (nextPlayer) {
                                 nextPlayer.mute();
-                                nextPlayer.playVideo();
+                                nextPlayer.playVideo(); // RESUME from the pause
                                 console.log("Pre-starting next video...");
                             }
                             chState.nextPrepared = true;
                         }
 
-                        // 2. The Swap (At End)
-                        if (timeLeft <= 0.2) {
+                        // 2. The Swap
+                        if (now >= swapPoint) {
                             performSwap(currentChannel);
                         }
                     }
@@ -612,9 +633,10 @@
             setTimeout(() => {
                 oldPlayer.stopVideo();
                 oldPlayer.loadVideoById(nextNextId);
-                // Background players just play (muted)
+                // Background players: Play to buffer, then PAUSE
                 oldPlayer.playVideo();
                 oldPlayer.mute();
+                setTimeout(() => oldPlayer.pauseVideo(), 1500); // The key fix
             }, 1000);
         }
 
