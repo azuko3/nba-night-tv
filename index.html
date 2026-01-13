@@ -217,16 +217,20 @@
             background: #b71c1c;
         }
 
-        #channel-display {
+        #osd-display {
             position: absolute;
             top: 5vh;
             right: 5vw;
             font-size: 3vw;
             font-weight: 900;
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255, 255, 255, 0.9);
             z-index: 15;
-            text-shadow: 0 0 10px black;
+            text-shadow: 2px 2px 4px #000000;
             display: none;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
     </style>
 </head>
@@ -249,7 +253,8 @@
             <p>DOWNLOADING DATA...</p>
         </div>
 
-        <div id="channel-display">CH 01</div>
+        <!-- On Screen Display (Channel/Volume) -->
+        <div id="osd-display">CH 01</div>
 
         <!-- Static Overlay for transitions -->
         <div id="static-overlay"></div>
@@ -334,7 +339,7 @@
                 setTimeout(() => splash.style.display = 'none', 500);
                 if (player && player.playVideo) {
                     player.playVideo();
-                    showChannelDisplay("NBA TV");
+                    showOSD("NBA TV");
                 }
             } else {
                 // TURN OFF
@@ -386,12 +391,21 @@
             if (!isTVOn) return;
             currentChannelId = id;
             currentVideoIndex = 0;
-            showChannelDisplay(id === 1 ? "NBA" : "COMEDY");
+            let channelName = id === 1 ? "CH 01: NBA" : "CH 02: COMEDY";
+            showOSD(channelName);
 
             if (player) {
                 showStatic();
                 setTimeout(() => player.loadVideoById(channels[id][0]), 300);
             }
+        }
+
+        function adjustVolume(change) {
+            if (!isTVOn || !player || !player.getVolume) return;
+            let currentVol = player.getVolume();
+            let newVol = Math.max(0, Math.min(100, currentVol + change));
+            player.setVolume(newVol);
+            showOSD("VOL: " + newVol + "%");
         }
 
         // --- UI HELPERS ---
@@ -403,19 +417,28 @@
             document.getElementById('player-div').style.visibility = show ? 'hidden' : 'visible';
         }
 
-        function showChannelDisplay(text) {
-            let el = document.getElementById('channel-display');
+        function showOSD(text) {
+            let el = document.getElementById('osd-display');
             el.innerText = text;
             el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 3000);
+
+            // Reset animation logic if you want simple fade, but timeout works fine
+            if (window.osdTimeout) clearTimeout(window.osdTimeout);
+            window.osdTimeout = setTimeout(() => el.style.display = 'none', 2500);
         }
 
         // --- KEYBOARD CONTROLS ---
         document.addEventListener('keydown', function (event) {
-            if (event.key === ' ' || event.key === 'Enter') togglePower(); // Space/Enter to Start/Stop
+            if (event.key === ' ' || event.key === 'Enter') togglePower();
             if (!isTVOn) return;
-            if (event.key === 'ArrowRight' || event.key === 'ArrowUp') switchChannel(1);
-            if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') switchChannel(2);
+
+            // Channel switching (Up/Down)
+            if (event.key === 'ArrowUp') switchChannel(1);
+            if (event.key === 'ArrowDown') switchChannel(2);
+
+            // Volume controls (Left/Right)
+            if (event.key === 'ArrowRight') adjustVolume(10);
+            if (event.key === 'ArrowLeft') adjustVolume(-10);
         });
     </script>
 </body>
