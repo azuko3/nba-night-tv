@@ -149,10 +149,21 @@
 </div>
 
 <script>
-    // --- CHANNELS DATA ---
+    // --- CHANNELS DATA (UPDATED) ---
     const channels = {
-        1: ['mK02y5jHk14', 'I4C8B50Jc6Q', 'BROKEN_TEST', 'tgbNymZ7vqY'], 
-        2: ['C0DPdy98e4c', 'L_jWHffIx5E', 'dQw4w9WgXcQ']
+        // Channel 1: NBA Highlights (Recent Games)
+        1: [
+            'R1Z5q7v_iIQ', // Celtics vs Bucks
+            'w1bI5-g3WkE', // Lakers vs Suns
+            'Pz8T5_a2Bc4', // Warriors Highlights
+            'abc123_BROKEN', // (Intentionally broken to test skipping)
+            'H8t_K9j2Zp0'  // Top 10 Plays
+        ], 
+        // Channel 2: Comedy/Misc (For switching test)
+        2: [
+            'tgbNymZ7vqY', // Muppets
+            'dQw4w9WgXcQ'  // Rick Astley
+        ]
     };
 
     let currentChannelId = 1;
