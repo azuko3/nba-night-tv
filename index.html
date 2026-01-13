@@ -2,179 +2,187 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NBA NIGHT TV</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Skip Video Player</title>
     <style>
-        :root { --nba-red: #C9082A; --nba-blue: #17408B; --font: 'Courier New', monospace; }
-        body { margin: 0; background: #000; color: #fff; font-family: var(--font); overflow: hidden; height: 100vh; width: 100vw; }
-        
-        /* UI LAYERS */
-        #splash { position: fixed; inset: 0; background: #050505; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
-        .logo { font-size: 2.5rem; font-weight: 900; letter-spacing: 5px; margin-bottom: 40px; }
-        .btn { background: transparent; border: 2px solid var(--nba-red); color: var(--nba-red); padding: 15px 40px; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(201,8,42,0.3); }
-        
-        #player-layer { position: fixed; inset: 0; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 1s; }
-        #video-container { position: fixed; inset: 0; z-index: 1; background: #000; }
-        iframe { width: 100%; height: 100%; border: 0; }
-        
-        .overlay-text { position: absolute; text-shadow: 2px 2px 4px #000; font-weight: bold; }
-        .top-left { top: 25px; left: 25px; }
-        .top-right { top: 25px; right: 25px; color: var(--nba-red); animation: pulse 2s infinite; }
-        .ticker { bottom: 40px; left: 25px; background: rgba(0,0,0,0.7); padding: 10px; border-left: 4px solid var(--nba-blue); animation: slideUp 1s 1s forwards; opacity: 0; }
-        .nav-dots { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 15px; }
-        .dot { width: 6px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 50%; transition: 0.3s; }
-        .dot.active { background: #fff; transform: scale(1.5); box-shadow: 0 0 10px #fff; }
-        
-        .static-noise { position: fixed; inset: 0; z-index: 5; opacity: 0; pointer-events: none; background: url('https://media.giphy.com/media/oEI9uBYSzLpBK/giphy.gif'); background-size: cover; mix-blend-mode: overlay; transition: opacity 0.1s; }
-        
-        #error-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000; /* Dark background like a TV interface */
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
-        @keyframes pulse { 50% { opacity: 0.5; } }
-        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+        #video-container {
+            position: relative;
+            width: 80%;
+            max-width: 800px;
+            aspect-ratio: 16 / 9;
+            background-color: #111;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* The actual iframe container */
+        #player {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Overlay for status messages (optional, visible during transitions) */
+        #status-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
 
-    <div id="splash">
-        <div class="logo">NBA NIGHT TV</div>
-        <button class="btn" onclick="app.start()">⏻ TUNE IN</button>
-    </div>
-
     <div id="video-container">
-        <div id="player"></div>
-        <div id="error-msg">
-            <h2>NO SIGNAL</h2>
-            <p>Stand by...</p>
+        <div id="status-overlay">
+            <p id="status-text">Loading...</p>
         </div>
-    </div>
-    <div class="static-noise" id="static"></div>
 
-    <div id="player-ui">
-        <div class="overlay-text top-left" id="ch-name">CH 01 • RECAP</div>
-        <div class="overlay-text top-right">● ON AIR</div>
-        <div class="nav-dots" id="dots"></div>
-        <div class="ticker">NOW PLAYING: <span id="ticker-text">...</span></div>
+        <div id="player"></div>
     </div>
 
-    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        const CHANNELS = ['recap', 'action', 'inside', 'vault'];
-        const CH_NAMES = ['CH 01 • RECAP', 'CH 02 • ACTION', 'CH 03 • INSIDE', 'CH 04 • VAULT'];
+        // --- CONFIGURATION ---
         
-        const app = {
-            data: null,
-            currentCh: 0,
-            currentVidIndex: 0,
-            player: null,
-            started: false,
+        // 1. Define your playlist (Array of YouTube Video IDs)
+        // You can fetch this from an API or a database later.
+        const playlist = [
+            'dQw4w9WgXcQ',   // Video 1: Rick Astley (Working)
+            'INVALID_ID_XX', // Video 2: Intentionally broken ID to test Error Skipping
+            'M7lc1UVf-VE',   // Video 3: YouTube Developers (Working)
+            'tgbNymZ7vqY'    // Video 4: Muppets (Working)
+        ];
 
-            init: async () => {
-                try {
-                    const resp = await fetch(`manifest.json?t=${Date.now()}`);
-                    const json = await resp.json();
-                    app.data = json.channels;
-                    app.renderDots();
-                } catch (e) {
-                    console.error("Manifest load failed", e);
+        let currentVideoIndex = 0;
+        let player;
+        let isSkipping = false; // Flag to prevent double skipping
+
+        // --- YOUTUBE API SETUP ---
+
+        // 2. Load the IFrame Player API code asynchronously.
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        // 3. This function creates an <iframe> (and YouTube player)
+        //    after the API code downloads.
+        function onYouTubeIframeAPIReady() {
+            console.log("API Ready. Initializing player...");
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                videoId: playlist[currentVideoIndex],
+                playerVars: {
+                    'playsinline': 1,
+                    'autoplay': 1,      // Try to autoplay
+                    'controls': 1,      // Show controls
+                    'rel': 0            // Do not show related videos at the end
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError 
                 }
-            },
+            });
+        }
 
-            start: () => {
-                if(!app.data) return;
-                document.getElementById('splash').style.opacity = 0;
-                setTimeout(() => document.getElementById('splash').remove(), 500);
-                document.getElementById('player-ui').style.opacity = 1;
-                app.started = true;
-                
-                window.YT.ready(() => {
-                    app.player = new YT.Player('player', {
-                        height: '100%', width: '100%',
-                        playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1, 'rel': 0, 'playsinline': 1 },
-                        events: { 'onReady': app.playChannel, 'onStateChange': app.onPlayerStateChange }
-                    });
-                });
-                
-                // Inputs
-                document.addEventListener('keydown', (e) => {
-                    if(e.key === 'ArrowDown') app.changeCh(1);
-                    if(e.key === 'ArrowUp') app.changeCh(-1);
-                });
-                let ts;
-                document.addEventListener('touchstart', (e) => ts = e.touches[0].clientY);
-                document.addEventListener('touchend', (e) => {
-                    let te = e.changedTouches[0].clientY;
-                    if(ts > te + 50) app.changeCh(1);
-                    if(ts < te - 50) app.changeCh(-1);
-                });
-            },
+        // --- EVENT HANDLERS ---
 
-            changeCh: (dir) => {
-                let next = app.currentCh + dir;
-                if(next < 0) next = CHANNELS.length - 1;
-                if(next >= CHANNELS.length) next = 0;
-                app.currentCh = next;
-                app.currentVidIndex = 0;
-                
-                const s = document.getElementById('static');
-                s.style.opacity = 0.4;
-                setTimeout(() => s.style.opacity = 0, 300);
-                
-                app.playChannel();
-            },
+        // 4. The API will call this function when the video player is ready.
+        function onPlayerReady(event) {
+            console.log("Player Ready. Playing video index: " + currentVideoIndex);
+            event.target.playVideo();
+        }
 
-            playChannel: () => {
-                const chKey = CHANNELS[app.currentCh];
-                const playlist = app.data[chKey];
-                
-                // SAFETY CHECK: If playlist is empty
-                if (!playlist || playlist.length === 0) {
-                    document.getElementById('ch-name').innerText = CH_NAMES[app.currentCh] + " (OFFLINE)";
-                    document.getElementById('ticker-text').innerText = "NO CONTENT AVAILABLE";
-                    document.getElementById('error-msg').style.display = 'block';
-                    if(app.player && app.player.stopVideo) app.player.stopVideo();
-                    app.updateDots();
-                    return;
-                }
-
-                document.getElementById('error-msg').style.display = 'none';
-                const video = playlist[app.currentVidIndex];
-                
-                // Update UI
-                document.getElementById('ch-name').innerText = CH_NAMES[app.currentCh];
-                document.getElementById('ticker-text').innerText = video.title;
-                app.updateDots();
-                
-                // Load Video
-                if(app.player && app.player.loadVideoById) {
-                    app.player.loadVideoById(video.id);
-                }
-            },
-
-            onPlayerStateChange: (e) => {
-                if(e.data === YT.PlayerState.ENDED) {
-                    const chKey = CHANNELS[app.currentCh];
-                    const playlist = app.data[chKey];
-                    if(playlist && playlist.length > 0) {
-                        app.currentVidIndex++;
-                        if(app.currentVidIndex >= playlist.length) app.currentVidIndex = 0;
-                        app.playChannel();
-                    }
-                }
-            },
-
-            renderDots: () => {
-                const d = document.getElementById('dots');
-                if(app.data) d.innerHTML = CHANNELS.map((_, i) => `<div class="dot ${i===0?'active':''}"></div>`).join('');
-            },
-            
-            updateDots: () => {
-                document.querySelectorAll('.dot').forEach((el, i) => {
-                    el.classList.toggle('active', i === app.currentCh);
-                });
+        // 5. The API calls this function when the player's state changes.
+        //    (e.g., playing, paused, ended)
+        function onPlayerStateChange(event) {
+            // YT.PlayerState.ENDED = 0
+            if (event.data === YT.PlayerState.ENDED) {
+                console.log("Video ended naturally. Moving to next...");
+                playNextVideo();
             }
-        };
+        }
 
-        app.init();
+        // 6. The API calls this function when an error occurs.
+        //    This is the critical part for skipping blocked videos.
+        function onPlayerError(event) {
+            const errorCode = event.data;
+            console.warn(`Error detected! Code: ${errorCode}`);
+
+            // Error Codes:
+            // 2   – The request contains an invalid parameter value.
+            // 5   – The requested content cannot be played in an HTML5 player.
+            // 100 – The video requested was not found.
+            // 101 – The owner of the requested video does not allow it to be played in embedded players.
+            // 150 – This is the same as 101.
+
+            if (!isSkipping) {
+                console.log("Bad video detected. Initiating auto-skip...");
+                showOverlay("Signal Lost. Searching..."); // Future: Trigger Snow Sound here
+                
+                // Small delay to ensure the UI updates before switching
+                setTimeout(() => {
+                    playNextVideo();
+                }, 1000); 
+            }
+        }
+
+        // --- LOGIC ---
+
+        function playNextVideo() {
+            isSkipping = true;
+            currentVideoIndex++;
+
+            // Check if we have more videos in the playlist
+            if (currentVideoIndex < playlist.length) {
+                console.log(`Loading next video ID: ${playlist[currentVideoIndex]}`);
+                
+                // Load the new video
+                player.loadVideoById(playlist[currentVideoIndex]);
+                
+                // Hide the overlay once the new video starts loading
+                hideOverlay();
+                isSkipping = false;
+            } else {
+                console.log("Playlist finished.");
+                showOverlay("No Signal. Playlist Ended.");
+                // Option: Loop back to start
+                // currentVideoIndex = -1; playNextVideo();
+            }
+        }
+
+        // --- UI HELPERS ---
+
+        function showOverlay(message) {
+            const overlay = document.getElementById('status-overlay');
+            const text = document.getElementById('status-text');
+            text.innerText = message;
+            overlay.style.display = 'flex';
+        }
+
+        function hideOverlay() {
+            const overlay = document.getElementById('status-overlay');
+            overlay.style.display = 'none';
+        }
+
     </script>
 </body>
 </html>
