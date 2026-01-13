@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Skip Player (Final Version)</title>
+    <title>NBA Night TV</title>
     <style>
         body {
             background-color: #000;
@@ -11,77 +11,148 @@
             margin: 0;
             height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
         }
 
-        #video-container {
+        /* Container imitating a TV screen */
+        #tv-frame {
             position: relative;
-            width: 800px;
-            height: 450px; /* 16:9 Aspect Ratio */
-            background: #111;
-            overflow: hidden; /* Ensures nothing spills out */
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            overflow: hidden;
         }
 
         /* The actual YouTube Player */
         #player-div {
             width: 100%;
             height: 100%;
+            pointer-events: none; /* CRITICAL: Prevents clicking/pausing manually */
         }
 
-        /* The Error/Snow Screen */
-        #error-screen {
-            display: none; /* Hidden by default */
+        /* The "TV Glass" - prevents interaction */
+        #tv-glass {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: black; /* Placeholder for Snow GIF later */
-            color: white;
+            z-index: 5;
+            background: transparent;
+        }
+
+        /* Error/Static Screen */
+        #error-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #111;
+            color: #555;
             z-index: 10;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
+            font-family: monospace;
         }
 
-        /* Helper class to toggle the error screen */
-        .show-error {
-            display: flex !important;
+        .show-error { display: flex !important; }
+
+        /* --- REMOTE CONTROL UI --- */
+        #remote-control {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(20, 20, 20, 0.9);
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+            transition: opacity 0.3s;
+        }
+
+        /* Hide remote when not hovering (optional) */
+        /* #remote-control:hover { opacity: 1; } */
+        /* #remote-control { opacity: 0.2; } */
+
+        .channel-btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-align: left;
+            transition: background 0.2s;
+        }
+
+        .channel-btn:hover { background: #555; }
+        .channel-btn.active { background: #d32f2f; } /* Red for active */
+
+        h3 { margin: 0 0 10px 0; font-size: 14px; color: #aaa; text-transform: uppercase; }
+
+        #channel-display {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            font-size: 24px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.7);
+            z-index: 15;
+            text-shadow: 2px 2px 4px #000;
+            display: none; /* Hidden unless changing channels */
         }
     </style>
 </head>
 <body>
 
-<div id="video-container">
+<div id="tv-frame">
+    <div id="channel-display">CH 01</div>
+
     <div id="error-screen">
-        <h2>SIGNAL LOST</h2>
-        <p>(Simulating Static Noise...)</p>
+        <h2>NO SIGNAL</h2>
+        <p>AUTO-TUNING...</p>
     </div>
 
+    <div id="tv-glass"></div>
+
     <div id="player-div"></div>
+
+    <div id="remote-control">
+        <h3>Remote</h3>
+        <button class="channel-btn active" onclick="switchChannel(1)">01 NBA TV</button>
+        <button class="channel-btn" onclick="switchChannel(2)">02 Comedy</button>
+        <button class="channel-btn" onclick="playNextVideo()">Skip >></button>
+    </div>
 </div>
 
 <script>
-    // --- CONFIGURATION ---
-    
-    // Playlist: 
-    // ID 1: Working
-    // ID 2: BROKEN (Will trigger the skip logic)
-    // ID 3: Working
-    var playlist = [
-        'dQw4w9WgXcQ',   
-        'BROKEN_ID_123', 
-        'tgbNymZ7vqY'    
-    ];
+    // --- CHANNELS DATA ---
+    // Channel 1: NBA Highlights (Real IDs from recent games)
+    // Channel 2: Comedy/Mix (For testing switching)
+    const channels = {
+        1: ['mK02y5jHk14', 'I4C8B50Jc6Q', 'yX12345_BROKEN', 'tgbNymZ7vqY'], 
+        2: ['C0DPdy98e4c', 'L_jWHffIx5E', 'dQw4w9WgXcQ']
+    };
 
-    var currentVideoIndex = 0;
-    var player;
+    let currentChannelId = 1;
+    let currentPlaylist = channels[1];
+    let currentVideoIndex = 0;
+    let player;
     
     // --- YOUTUBE API SETUP ---
-    
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -89,16 +160,20 @@
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player-div', {
-            videoId: playlist[currentVideoIndex],
+            videoId: currentPlaylist[currentVideoIndex],
             playerVars: {
                 'autoplay': 1,
-                'controls': 1,
-                'rel': 0
+                'controls': 0,      // REMOVES CONTROLS
+                'disablekb': 1,     // DISABLES KEYBOARD
+                'fs': 0,            // DISABLES FULLSCREEN BUTTON
+                'modestbranding': 1,
+                'rel': 0,
+                'showinfo': 0
             },
             events: {
                 'onReady': onPlayerReady,
-                'onError': onPlayerError,       // CRITICAL: Handles the blocks
-                'onStateChange': onPlayerStateChange // CRITICAL: Handles normal ending
+                'onError': onPlayerError,
+                'onStateChange': onPlayerStateChange
             }
         });
     }
@@ -106,32 +181,23 @@
     // --- EVENT HANDLERS ---
 
     function onPlayerReady(event) {
-        console.log("Player ready. Starting video.");
         event.target.playVideo();
+        showChannelDisplay("CH 01: NBA");
     }
 
-    // Handle normal video ending (when video finishes naturally)
     function onPlayerStateChange(event) {
+        // Video Ended naturally
         if (event.data === YT.PlayerState.ENDED) {
-            console.log("Video ended naturally.");
             playNextVideo();
         }
     }
 
-    // Handle Errors (Region block, deleted video, etc.)
     function onPlayerError(event) {
-        // Error Codes: 100, 101, 150 = Video not found or Blocked
+        // Handle blocked/deleted videos
         if ([100, 101, 150].includes(event.data)) {
-            console.log("Error detected (Code " + event.data + "). Initiating skip sequence.");
-            
-            // Step 1: Hide the player & Show Error Screen
-            // This ensures we NEVER see the YouTube suggestions
+            console.log("Error detected. Auto-skipping...");
             toggleErrorMode(true);
-
-            // Step 2: Wait 3 seconds (simulating static noise), then skip
-            setTimeout(function() {
-                playNextVideo();
-            }, 3000); 
+            setTimeout(() => { playNextVideo(); }, 2000); 
         }
     }
 
@@ -139,39 +205,70 @@
 
     function playNextVideo() {
         currentVideoIndex++;
+        
+        // Loop playlist if at end
+        if (currentVideoIndex >= currentPlaylist.length) {
+            currentVideoIndex = 0;
+        }
 
-        if (currentVideoIndex < playlist.length) {
-            console.log("Loading next video: " + playlist[currentVideoIndex]);
-            
-            // Load the new video
-            player.loadVideoById(playlist[currentVideoIndex]);
-            
-            // Hide the error screen and show player again
+        // Load new video
+        if (player && player.loadVideoById) {
+            player.loadVideoById(currentPlaylist[currentVideoIndex]);
             toggleErrorMode(false);
-        } else {
-            console.log("End of playlist.");
         }
     }
 
-    // Helper function to swap between Video and Error Screen
-    function toggleErrorMode(isError) {
-        var errorScreen = document.getElementById('error-screen');
-        var playerDiv = document.getElementById('player-div');
+    function switchChannel(channelId) {
+        if (channels[channelId]) {
+            currentChannelId = channelId;
+            currentPlaylist = channels[channelId];
+            currentVideoIndex = 0; // Reset to start of new channel
 
+            // Update UI buttons
+            document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Visual feedback on screen
+            let name = channelId === 1 ? "NBA" : "COMEDY";
+            showChannelDisplay(`CH 0${channelId}: ${name}`);
+
+            // Load the channel
+            if (player && player.loadVideoById) {
+                toggleErrorMode(true); // Short static effect between channels
+                setTimeout(() => {
+                    player.loadVideoById(currentPlaylist[currentVideoIndex]);
+                    toggleErrorMode(false);
+                }, 500);
+            }
+        }
+    }
+
+    // --- UI HELPERS ---
+
+    function toggleErrorMode(isError) {
+        const errorScreen = document.getElementById('error-screen');
+        const playerDiv = document.getElementById('player-div');
+        
         if (isError) {
-            // Hide player completely so no UI is seen
-            playerDiv.style.visibility = 'hidden'; 
-            // Show error screen
+            playerDiv.style.opacity = '0'; 
             errorScreen.classList.add('show-error');
         } else {
-            // Show player
-            playerDiv.style.visibility = 'visible';
-            // Hide error screen
+            playerDiv.style.opacity = '1';
             errorScreen.classList.remove('show-error');
         }
     }
 
-</script>
+    function showChannelDisplay(text) {
+        const disp = document.getElementById('channel-display');
+        disp.innerText = text;
+        disp.style.display = 'block';
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+            disp.style.display = 'none';
+        }, 3000);
+    }
 
+</script>
 </body>
 </html>
