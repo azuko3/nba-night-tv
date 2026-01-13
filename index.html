@@ -1,22 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NBA Night TV - Fullscreen</title>
+    <title>NBA Smart TV (Server-Side)</title>
     <style>
-        /* RESET & FULLSCREEN SETUP */
-        html, body {
+        /* --- CSS STYLES --- */
+        html,
+        body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             background-color: #000;
-            overflow: hidden; /* No scrollbars */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            font-family: sans-serif;
         }
 
-        /* Container covers the entire viewport */
         #tv-frame {
             position: absolute;
             top: 0;
@@ -26,14 +27,13 @@
             background: #000;
         }
 
-        /* The YouTube Player fills the container */
         #player-div {
             width: 100%;
             height: 100%;
-            pointer-events: none; /* No mouse interaction with video */
+            pointer-events: none;
+            /* Disables mouse interaction */
         }
 
-        /* Transparent shield */
         #tv-glass {
             position: absolute;
             top: 0;
@@ -44,7 +44,7 @@
             background: transparent;
         }
 
-        /* Error Screen */
+        /* Error / No Signal Screen */
         #error-screen {
             display: none;
             position: absolute;
@@ -59,263 +59,228 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            font-family: monospace;
-            letter-spacing: 2px;
         }
 
-        .show-error { display: flex !important; }
+        .show-error {
+            display: flex !important;
+        }
 
-        /* --- REMOTE CONTROL UI --- */
+        /* Remote Control UI */
         #remote-control {
             position: absolute;
             bottom: 30px;
             right: 30px;
-            background: rgba(0, 0, 0, 0.6); /* More transparent */
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(5px);
             padding: 15px;
             border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 20;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            transition: opacity 0.3s, transform 0.3s;
             width: 140px;
+            transition: opacity 0.3s;
+            opacity: 0.3;
         }
 
-        /* Make remote settle when not used */
-        #remote-control:hover { opacity: 1; transform: scale(1.02); }
-        #remote-control { opacity: 0.3; } /* Dimmed when idle */
+        #remote-control:hover {
+            opacity: 1;
+        }
 
         .channel-btn {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             color: #ddd;
             border: none;
             padding: 10px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
             text-align: left;
-            transition: all 0.2s;
         }
 
-        .channel-btn:hover { background: rgba(255,255,255,0.3); color: #fff; }
-        .channel-btn.active { background: #d32f2f; color: white; border-left: 4px solid #ff6659; } 
-
-        .fs-btn {
-            margin-top: 10px;
-            background: #444;
-            text-align: center;
-            font-weight: bold;
-            color: #ffcc00;
+        .channel-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: #fff;
         }
 
-        h3 { margin: 0 0 10px 0; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+        .channel-btn.active {
+            background: #d32f2f;
+            color: white;
+        }
 
         #channel-display {
             position: absolute;
             top: 5vh;
             right: 5vw;
-            font-size: 3vw; /* Responsive font size */
+            font-size: 3vw;
             font-weight: 900;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             z-index: 15;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            text-shadow: 0 0 10px black;
             display: none;
-            font-family: sans-serif;
         }
     </style>
 </head>
+
 <body>
 
-<div id="tv-frame">
-    <div id="channel-display">CH 01</div>
+    <div id="tv-frame">
+        <div id="channel-display">CH 01</div>
 
-    <div id="error-screen">
-        <h1 style="font-size: 4rem;">NO SIGNAL</h1>
-        <p>SEARCHING SATELLITE...</p>
+        <div id="error-screen">
+            <h1>NO SIGNAL</h1>
+            <p>DOWNLOADING DATA...</p>
+        </div>
+
+        <div id="tv-glass"></div>
+
+        <div id="player-div"></div>
+
+        <div id="remote-control">
+            <button class="channel-btn" onclick="toggleFullScreen()">⚡ FULLSCREEN</button>
+            <div style="height:10px;"></div>
+            <button class="channel-btn active" onclick="switchChannel(1)">01 NBA</button>
+            <button class="channel-btn" onclick="switchChannel(2)">02 Comedy</button>
+            <button class="channel-btn" onclick="playNextVideo()">⏭ SKIP</button>
+        </div>
     </div>
 
-    <div id="tv-glass"></div>
-    <div id="player-div"></div>
+    <script>
+        // --- DATA ---
+        let channels = {
+            1: [], // To be loaded from playlist.json
+            2: ['dQw4w9WgXcQ', 'L_jWHffIx5E'] // Backup channel
+        };
 
-    <div id="remote-control">
-        <h3>CONTROLS</h3>
-        <button class="channel-btn fs-btn" onclick="toggleFullScreen()">⚡ FULLSCREEN</button>
-        <div style="height:10px;"></div> <button class="channel-btn active" onclick="switchChannel(1)">01 NBA</button>
-        <button class="channel-btn" onclick="switchChannel(2)">02 Comedy</button>
-        <button class="channel-btn" onclick="playNextVideo()">⏭ SKIP</button>
-    </div>
-</div>
+        let currentChannelId = 1;
+        let currentVideoIndex = 0;
+        let player;
 
-<script>
-    // --- CHANNELS DATA (Working in Israel) ---
-    const channels = {
-        // Channel 1: NBA Mix (House of Highlights / Historic Moments)
-        1: [
-            'MEE5hXzSgZQ', // Steph Curry 60 Points (House of Highlights)
-            '04o29p8t6f0', // Shaq & Kobe Highlights
-            'V9x629z65aE', // LeBron James Best Plays
-            'tgbNymZ7vqY', // (Backup: Muppets just to prove it works)
-        ], 
-        // Channel 2: Comedy / Music
-        2: [
-            'dQw4w9WgXcQ', // Rick Astley
-            'L_jWHffIx5E', // Key & Peele
-        ]
-    };
+        // --- 1. FETCH PLAYLIST (FROM LOCAL JSON FILE) ---
+        async function loadPlaylistData() {
+            console.log("Fetching playlist.json from server...");
+            try {
+                // Append timestamp to prevent browser caching
+                const response = await fetch('playlist.json?t=' + new Date().getTime());
 
-    let currentChannelId = 1;
-    let currentPlaylist = channels[1];
-    let currentVideoIndex = 0;
-    let player;
-    
-    // --- YOUTUBE API ---
-    var tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                if (!response.ok) throw new Error("File not found");
 
-    function onYouTubeIframeAPIReady() {
-        player = new YT.Player('player-div', {
-            videoId: currentPlaylist[currentVideoIndex],
-            playerVars: {
-                'autoplay': 1,
-                'controls': 0,      
-                'disablekb': 1,     
-                'fs': 0,            
-                'modestbranding': 1,
-                'rel': 0,
-                'showinfo': 0,
-                'iv_load_policy': 3 // Hides video annotations
-            },
-            events: {
-                'onReady': onPlayerReady,
-                'onError': onPlayerError,
-                'onStateChange': onPlayerStateChange
+                const data = await response.json();
+
+                if (data["1"] && data["1"].length > 0) {
+                    channels[1] = data["1"];
+                    console.log("Playlist loaded successfully:", channels[1]);
+                }
+            } catch (error) {
+                console.warn("Could not load playlist.json (using backup):", error);
+                // Backup IDs if file is missing
+                channels[1] = ['dQw4w9WgXcQ'];
             }
-        });
-    }
-
-    // --- LOGIC ---
-
-    function onPlayerReady(event) {
-        event.target.playVideo();
-        showChannelDisplay("NBA TV");
-    }
-
-    function onPlayerStateChange(event) {
-        if (event.data === YT.PlayerState.ENDED) {
-            playNextVideo();
         }
-    }
 
-    function onPlayerError(event) {
-        if ([100, 101, 150].includes(event.data)) {
-            console.log("Error detected. Auto-skipping...");
-            toggleErrorMode(true);
-            setTimeout(() => { playNextVideo(); }, 2000); 
+        // --- YOUTUBE API SETUP ---
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        function onYouTubeIframeAPIReady() {
+            // Load data first, then initialize player
+            loadPlaylistData().then(() => {
+                initPlayer();
+            });
         }
-    }
 
-    function playNextVideo() {
-        currentVideoIndex++;
-        if (currentVideoIndex >= currentPlaylist.length) currentVideoIndex = 0;
-        
-        if (player && player.loadVideoById) {
-            player.loadVideoById(currentPlaylist[currentVideoIndex]);
-            toggleErrorMode(false);
+        function initPlayer() {
+            // Safe check: ensure channel 1 has at least one video
+            let startVideo = (channels[1].length > 0) ? channels[1][0] : 'dQw4w9WgXcQ';
+
+            player = new YT.Player('player-div', {
+                videoId: startVideo,
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'disablekb': 1,
+                    'fs': 0,
+                    'modestbranding': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onError': onPlayerError,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
         }
-    }
 
-    function switchChannel(channelId) {
-        if (channels[channelId]) {
-            currentChannelId = channelId;
-            currentPlaylist = channels[channelId];
-            currentVideoIndex = 0;
+        // --- EVENT HANDLERS ---
+        function onPlayerReady(event) {
+            event.target.playVideo();
+            showChannelDisplay("NBA TV");
+        }
 
-            document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
-            // Note: event.target might fail if called programmatically, but works on click
-            // Simplified for this demo
-            
-            let name = channelId === 1 ? "NBA TV" : "COMEDY";
-            showChannelDisplay(name);
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) playNextVideo();
+        }
+
+        function onPlayerError(event) {
+            // Skip video if blocked
+            if ([100, 101, 150].includes(event.data)) {
+                toggleErrorMode(true);
+                setTimeout(() => { playNextVideo(); }, 1500);
+            }
+        }
+
+        // --- LOGIC ---
+        function playNextVideo() {
+            currentVideoIndex++;
+            if (currentVideoIndex >= channels[currentChannelId].length) currentVideoIndex = 0;
 
             if (player && player.loadVideoById) {
+                player.loadVideoById(channels[currentChannelId][currentVideoIndex]);
+                toggleErrorMode(false);
+            }
+        }
+
+        function switchChannel(id) {
+            currentChannelId = id;
+            currentVideoIndex = 0;
+            showChannelDisplay(id === 1 ? "NBA" : "COMEDY");
+
+            if (player) {
                 toggleErrorMode(true);
-                setTimeout(() => {
-                    player.loadVideoById(currentPlaylist[currentVideoIndex]);
-                    toggleErrorMode(false);
-                }, 800);
+                setTimeout(() => player.loadVideoById(channels[id][0]), 500);
+                setTimeout(() => toggleErrorMode(false), 1000);
             }
         }
-    }
 
-    // --- FULLSCREEN LOGIC ---
-    function toggleFullScreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.log(`Error attempting to enable full-screen mode: ${err.message}`);
-            });
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
+        // --- UI HELPERS ---
+        function toggleErrorMode(show) {
+            document.getElementById('error-screen').classList.toggle('show-error', show);
+            document.getElementById('player-div').style.visibility = show ? 'hidden' : 'visible';
+        }
+
+        function showChannelDisplay(text) {
+            let el = document.getElementById('channel-display');
+            el.innerText = text;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
             }
         }
-    }
 
-    // --- UI HELPERS ---
-
-    function toggleErrorMode(isError) {
-        const errorScreen = document.getElementById('error-screen');
-        const playerDiv = document.getElementById('player-div');
-        
-        if (isError) {
-            playerDiv.style.visibility = 'hidden'; 
-            errorScreen.classList.add('show-error');
-        } else {
-            playerDiv.style.visibility = 'visible';
-            errorScreen.classList.remove('show-error');
-        }
-    }
-
-    function showChannelDisplay(text) {
-        const disp = document.getElementById('channel-display');
-        disp.innerText = text;
-        disp.style.display = 'block';
-        setTimeout(() => { disp.style.display = 'none'; }, 3000);
-    }
-    
-    // --- KEYBOARD CONTROL (TV REMOTE) ---
-    
-    document.addEventListener('keydown', function(event) {
-        // מונע גלילה של הדף עם החצים
-        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(event.code) > -1) {
-            event.preventDefault();
-        }
-
-        const totalChannels = Object.keys(channels).length;
-        
-        // חץ למעלה / ימינה = ערוץ הבא
-        if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
-            let nextChannel = currentChannelId + 1;
-            if (nextChannel > totalChannels) nextChannel = 1; // חוזר להתחלה
-            switchChannel(nextChannel);
-        }
-        
-        // חץ למטה / שמאלה = ערוץ קודם
-        if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') {
-            let prevChannel = currentChannelId - 1;
-            if (prevChannel < 1) prevChannel = totalChannels; // הולך לסוף
-            switchChannel(prevChannel);
-        }
-
-        // מקש F = מסך מלא
-        if (event.key === 'f' || event.key === 'F') {
-            toggleFullScreen();
-        }
-    });
-
-</script>
+        // --- KEYBOARD CONTROLS ---
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowRight' || event.key === 'ArrowUp') switchChannel(1);
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') switchChannel(2);
+        });
+    </script>
 </body>
+
 </html>
