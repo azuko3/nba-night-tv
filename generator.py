@@ -272,4 +272,41 @@ def main():
     
     vault_parsed = []
     for it in vault_items:
-        try
+        try: 
+            dur = duration_iso8601_to_seconds(it["contentDetails"]["duration"])
+            if dur > VAULT_MIN_SECONDS:
+                vault_parsed.append(Video(it["id"], it["snippet"]["title"], now_utc, dur, None))
+        except: pass
+    
+    today_str = now_utc.strftime("%b %d")
+    vault_today = [v for v in vault_parsed if today_str in v.title]
+    vault_rest = [v for v in vault_parsed if v not in vault_today]
+    rng_v = random.Random(f"vault:{active_day}")
+    rng_v.shuffle(vault_today); rng_v.shuffle(vault_rest)
+    vault_final = (vault_today + vault_rest)[:20]
+
+    def serialize(v):
+        return {"id": v.id, "title": v.title, "duration": v.duration_seconds, "type": v.action_type}
+
+    manifest = {
+        "meta": {"generated_at": now_utc.isoformat(), "active_day": active_day.isoformat(), "is_dark": is_dark},
+        "channels": {
+            "recap": [serialize(v) for v in recap_final],
+            "action": [serialize(v) for v in action_final],
+            "inside": [serialize(v) for v in inside_final],
+            "vault": [serialize(v) for v in vault_final],
+        }
+    }
+    
+    # Atomic Write
+    tmp = args.out + ".tmp"
+    with open(tmp, "w") as f: json.dump(manifest, f, indent=2)
+    os.replace(tmp, args.out)
+    
+    # Update Backup
+    tmp2 = args.last_good + ".tmp"
+    with open(tmp2, "w") as f: json.dump(manifest, f, indent=2)
+    os.replace(tmp2, args.last_good)
+
+if __name__ == "__main__":
+    main()
