@@ -1,159 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NBA NIGHT TV</title>
     <style>
-        :root {
-            --nba-red: #C9082A;
-            --nba-blue: #17408B;
-            --font: 'Courier New', monospace;
-        }
-
-        body {
-            margin: 0;
-            background: #000;
-            color: #fff;
-            font-family: var(--font);
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-        }
-
+        :root { --nba-red: #C9082A; --nba-blue: #17408B; --font: 'Courier New', monospace; }
+        body { margin: 0; background: #000; color: #fff; font-family: var(--font); overflow: hidden; height: 100vh; width: 100vw; }
+        
         /* UI LAYERS */
-        #splash {
-            position: fixed;
-            inset: 0;
-            background: #050505;
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s;
-        }
+        #splash { position: fixed; inset: 0; background: #050505; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        .logo { font-size: 2.5rem; font-weight: 900; letter-spacing: 5px; margin-bottom: 40px; }
+        .btn { background: transparent; border: 2px solid var(--nba-red); color: var(--nba-red); padding: 15px 40px; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(201,8,42,0.3); }
+        
+        #player-layer { position: fixed; inset: 0; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 1s; }
+        #video-container { position: fixed; inset: 0; z-index: 1; background: #000; }
+        iframe { width: 100%; height: 100%; border: 0; }
+        
+        .overlay-text { position: absolute; text-shadow: 2px 2px 4px #000; font-weight: bold; }
+        .top-left { top: 25px; left: 25px; }
+        .top-right { top: 25px; right: 25px; color: var(--nba-red); animation: pulse 2s infinite; }
+        .ticker { bottom: 40px; left: 25px; background: rgba(0,0,0,0.7); padding: 10px; border-left: 4px solid var(--nba-blue); animation: slideUp 1s 1s forwards; opacity: 0; }
+        .nav-dots { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 15px; }
+        .dot { width: 6px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 50%; transition: 0.3s; }
+        .dot.active { background: #fff; transform: scale(1.5); box-shadow: 0 0 10px #fff; }
+        
+        .static-noise { position: fixed; inset: 0; z-index: 5; opacity: 0; pointer-events: none; background: url('https://media.giphy.com/media/oEI9uBYSzLpBK/giphy.gif'); background-size: cover; mix-blend-mode: overlay; transition: opacity 0.1s; }
+        
+        #error-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; }
 
-        .logo {
-            font-size: 2.5rem;
-            font-weight: 900;
-            letter-spacing: 5px;
-            margin-bottom: 40px;
-        }
-
-        .btn {
-            background: transparent;
-            border: 2px solid var(--nba-red);
-            color: var(--nba-red);
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(201, 8, 42, 0.3);
-        }
-
-        #player-layer {
-            position: fixed;
-            inset: 0;
-            z-index: 10;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 1s;
-        }
-
-        #video-container {
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-            background: #000;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: 0;
-        }
-
-        .overlay-text {
-            position: absolute;
-            text-shadow: 2px 2px 4px #000;
-            font-weight: bold;
-        }
-
-        .top-left {
-            top: 25px;
-            left: 25px;
-        }
-
-        .top-right {
-            top: 25px;
-            right: 25px;
-            color: var(--nba-red);
-            animation: pulse 2s infinite;
-        }
-
-        .ticker {
-            bottom: 40px;
-            left: 25px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-left: 4px solid var(--nba-blue);
-            animation: slideUp 1s 1s forwards;
-            opacity: 0;
-        }
-
-        .nav-dots {
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .dot {
-            width: 6px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            transition: 0.3s;
-        }
-
-        .dot.active {
-            background: #fff;
-            transform: scale(1.5);
-            box-shadow: 0 0 10px #fff;
-        }
-
-        .static-noise {
-            position: fixed;
-            inset: 0;
-            z-index: 5;
-            opacity: 0;
-            pointer-events: none;
-            background: url('https://media.giphy.com/media/oEI9uBYSzLpBK/giphy.gif');
-            background-size: cover;
-            mix-blend-mode: overlay;
-            transition: opacity 0.1s;
-        }
-
-        @keyframes pulse {
-            50% {
-                opacity: 0.5;
-            }
-        }
-
-        @keyframes slideUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        @keyframes pulse { 50% { opacity: 0.5; } }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-
 <body>
 
     <div id="splash">
@@ -163,6 +42,10 @@
 
     <div id="video-container">
         <div id="player"></div>
+        <div id="error-msg">
+            <h2>NO SIGNAL</h2>
+            <p>Stand by...</p>
+        </div>
     </div>
     <div class="static-noise" id="static"></div>
 
@@ -177,7 +60,7 @@
     <script>
         const CHANNELS = ['recap', 'action', 'inside', 'vault'];
         const CH_NAMES = ['CH 01 • RECAP', 'CH 02 • ACTION', 'CH 03 • INSIDE', 'CH 04 • VAULT'];
-
+        
         const app = {
             data: null,
             currentCh: 0,
@@ -186,95 +69,104 @@
             started: false,
 
             init: async () => {
-                // Fetch Manifest with Cache Busting
-                const resp = await fetch(`manifest.json?t=${Date.now()}`);
-                const json = await resp.json();
-                app.data = json.channels;
-                app.renderDots();
+                try {
+                    const resp = await fetch(`manifest.json?t=${Date.now()}`);
+                    const json = await resp.json();
+                    app.data = json.channels;
+                    app.renderDots();
+                } catch (e) {
+                    console.error("Manifest load failed", e);
+                }
             },
 
             start: () => {
-                if (!app.data) return;
+                if(!app.data) return;
                 document.getElementById('splash').style.opacity = 0;
                 setTimeout(() => document.getElementById('splash').remove(), 500);
                 document.getElementById('player-ui').style.opacity = 1;
                 app.started = true;
-
-                // Init YouTube Player
+                
                 window.YT.ready(() => {
                     app.player = new YT.Player('player', {
                         height: '100%', width: '100%',
-                        playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1, 'rel': 0, 'playsinline': 1, 'iv_load_policy': 3 },
+                        playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1, 'rel': 0, 'playsinline': 1 },
                         events: { 'onReady': app.playChannel, 'onStateChange': app.onPlayerStateChange }
                     });
                 });
-
-                // Keyboard & Touch Inputs
+                
+                // Inputs
                 document.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowDown') app.changeCh(1);
-                    if (e.key === 'ArrowUp') app.changeCh(-1);
+                    if(e.key === 'ArrowDown') app.changeCh(1);
+                    if(e.key === 'ArrowUp') app.changeCh(-1);
                 });
-
                 let ts;
                 document.addEventListener('touchstart', (e) => ts = e.touches[0].clientY);
                 document.addEventListener('touchend', (e) => {
                     let te = e.changedTouches[0].clientY;
-                    if (ts > te + 50) app.changeCh(1); // Swipe Up
-                    if (ts < te - 50) app.changeCh(-1); // Swipe Down
+                    if(ts > te + 50) app.changeCh(1);
+                    if(ts < te - 50) app.changeCh(-1);
                 });
             },
 
             changeCh: (dir) => {
                 let next = app.currentCh + dir;
-                if (next < 0) next = CHANNELS.length - 1;
-                if (next >= CHANNELS.length) next = 0;
+                if(next < 0) next = CHANNELS.length - 1;
+                if(next >= CHANNELS.length) next = 0;
                 app.currentCh = next;
                 app.currentVidIndex = 0;
-
-                app.showStatic();
+                
+                const s = document.getElementById('static');
+                s.style.opacity = 0.4;
+                setTimeout(() => s.style.opacity = 0, 300);
+                
                 app.playChannel();
             },
 
             playChannel: () => {
                 const chKey = CHANNELS[app.currentCh];
                 const playlist = app.data[chKey];
-                const video = playlist[app.currentVidIndex];
+                
+                // SAFETY CHECK: If playlist is empty
+                if (!playlist || playlist.length === 0) {
+                    document.getElementById('ch-name').innerText = CH_NAMES[app.currentCh] + " (OFFLINE)";
+                    document.getElementById('ticker-text').innerText = "NO CONTENT AVAILABLE";
+                    document.getElementById('error-msg').style.display = 'block';
+                    if(app.player && app.player.stopVideo) app.player.stopVideo();
+                    app.updateDots();
+                    return;
+                }
 
+                document.getElementById('error-msg').style.display = 'none';
+                const video = playlist[app.currentVidIndex];
+                
                 // Update UI
                 document.getElementById('ch-name').innerText = CH_NAMES[app.currentCh];
                 document.getElementById('ticker-text').innerText = video.title;
                 app.updateDots();
-
+                
                 // Load Video
-                if (app.player && app.player.loadVideoById) {
+                if(app.player && app.player.loadVideoById) {
                     app.player.loadVideoById(video.id);
                 }
             },
 
             onPlayerStateChange: (e) => {
-                if (e.data === YT.PlayerState.ENDED) {
-                    app.showStatic();
-                    // Next video
+                if(e.data === YT.PlayerState.ENDED) {
                     const chKey = CHANNELS[app.currentCh];
-                    app.currentVidIndex++;
-                    if (app.currentVidIndex >= app.data[chKey].length) app.currentVidIndex = 0;
-                    app.playChannel();
+                    const playlist = app.data[chKey];
+                    if(playlist && playlist.length > 0) {
+                        app.currentVidIndex++;
+                        if(app.currentVidIndex >= playlist.length) app.currentVidIndex = 0;
+                        app.playChannel();
+                    }
                 }
-                if (e.data === YT.PlayerState.PLAYING) {
-                    document.getElementById('static').style.opacity = 0;
-                }
-            },
-
-            showStatic: () => {
-                const s = document.getElementById('static');
-                s.style.opacity = 0.4;
             },
 
             renderDots: () => {
                 const d = document.getElementById('dots');
-                d.innerHTML = CHANNELS.map((_, i) => `<div class="dot ${i === 0 ? 'active' : ''}"></div>`).join('');
+                if(app.data) d.innerHTML = CHANNELS.map((_, i) => `<div class="dot ${i===0?'active':''}"></div>`).join('');
             },
-
+            
             updateDots: () => {
                 document.querySelectorAll('.dot').forEach((el, i) => {
                     el.classList.toggle('active', i === app.currentCh);
@@ -285,5 +177,4 @@
         app.init();
     </script>
 </body>
-
 </html>
