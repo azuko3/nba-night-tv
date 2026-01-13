@@ -59,10 +59,7 @@
             visibility: hidden;
         }
 
-        /* Legacy rule removal/update */
-        .video-player.active {
-            /* No longer sufficient on its own */
-        }
+
 
         /* --- UI LAYERS --- */
         #tv-bezel {
@@ -174,14 +171,25 @@
             }
         }
 
-        /* --- NEON REMOTE (CENTERED) --- */
-        #remote-container {
-            position: absolute;
+        /* --- NEON REMOTE STRUCTURE --- */
+
+        /* 1. Wrapper: The positioning anchor & Hit Area */
+        #remote-wrapper {
             position: absolute;
             top: 65%;
-            /* Moved down to make room for title */
             left: 50%;
             transform: translate(-50%, -50%);
+            z-index: 200;
+            transition: all 0.5s;
+            /* Ensure it has size to contain the remote */
+            width: 340px;
+            height: auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* 2. Container: The Visible Remote Card */
+        #remote-container {
             width: 300px;
             padding: 20px;
             background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
@@ -190,51 +198,70 @@
                 0 0 30px rgba(0, 0, 0, 0.8),
                 inset 0 0 2px rgba(255, 255, 255, 0.1),
                 0 0 0 1px #222;
-            z-index: 200;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 20px;
-            transition: opacity 0.5s, transform 0.5s;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* Mini Remote State (When Playing) */
+        /* --- PLAYING STATE (SLIDING SIDEBAR) --- */
+
+        /* Move the WRAPPER to the side to create the dock */
+        .tv-playing #remote-wrapper {
+            top: 20%;
+            left: 0;
+            transform: none;
+            /* Reset center alignment */
+            width: 60px;
+            /* Small safe hit area triggered by mouse at edge */
+            height: 300px;
+            /* Vertical strip */
+            justify-content: flex-start;
+            /* Align remote to top-left of wrapper */
+            overflow: visible;
+            /* Allow remote to slide out */
+        }
+
+        /* Expand wrapper on hover so mouse doesn't lose it */
+        .tv-playing #remote-wrapper:hover {
+            width: 200px;
+            /* Expand hit area to cover the slid-out remote */
+        }
+
+        /* The Remote itself in Mini Mode */
         .tv-playing #remote-container {
-            /* Dock to Top-Left */
-            top: 20px;
-            left: 20px;
-            transform: scale(0.6);
-            /* Shrink significantly */
+            width: 160px;
+            padding: 10px;
+            transform: scale(0.8) translateX(-130px);
+            /* Hide it off screen to the left */
             transform-origin: top left;
-            /* Anchor to corner */
-            opacity: 0.3;
-            /* Ghosted */
-            pointer-events: auto;
-            /* Still clickable */
-            background: rgba(26, 26, 26, 0.8);
-            /* More transparent bg */
+            opacity: 0.6;
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid #333;
         }
 
-        /* Hover behavior for Mini Remote */
-        .tv-playing #remote-container:hover {
+        /* Slide IN when Wrapper is hovered */
+        .tv-playing #remote-wrapper:hover #remote-container {
+            transform: scale(0.9) translateX(0);
+            /* Slide into view */
             opacity: 1;
-            transform: scale(0.65);
-            /* Slight pop on hover */
-            background: #1a1a1a;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+            background: #111;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
         }
 
-        /* Clean up clutter in Mini Mode */
-        .tv-playing .instructions {
-            display: none;
-        }
-
-        /* Adjust remote screen in mini mode for better visibility */
+        /* Adjust screen element in mini mode */
         .tv-playing .remote-screen {
-            height: 60px;
-            /* Compress height */
+            height: 50px;
+            width: 100%;
             margin-bottom: 5px;
+            /* Make the icon pulsate or move on hover if desired */
         }
+
+        /* Specific tweaks for the "Sliding Ball" effect requested */
+        /* "The ball should be prominent... when hovering it moves right" */
+        /* Currently the whole container moves. The User said: "If it's on left, it moves right exposing button" */
+        /* The container logic above does exactly this (Left: -120px -> Left: 20px) */
 
         /* Initial State (Centered) */
         /* See #remote-container definition above */
@@ -345,8 +372,12 @@
 
         /* Mobile specific adjustments */
         @media (max-width: 600px) {
+            #remote-wrapper {
+                width: 280px;
+            }
+
             #remote-container {
-                width: 260px;
+                width: 100%;
             }
 
             #osd-display {
@@ -381,23 +412,26 @@
             <span>TV</span>
         </div>
 
-        <!-- Neon Remote -->
-        <div id="remote-container">
-            <div class="remote-screen">
-                <i class="fas fa-basketball-ball remote-icon"></i>
-            </div>
+        <!-- Neon Remote Wrapper (Hit Area) -->
+        <!-- Wrapper stays fixed to capture hover, avoiding "shaking" when child moves -->
+        <div id="remote-wrapper">
+            <div id="remote-container">
+                <div class="remote-screen">
+                    <i class="fas fa-basketball-ball remote-icon"></i>
+                </div>
 
-            <div class="instructions">POWER</div>
+                <div class="instructions">POWER</div>
 
-            <div class="power-wrapper" onclick="togglePower()">
-                <i class="fas fa-power-off power-icon"></i>
-            </div>
-            <div class="status-led" id="led"></div>
+                <div class="power-wrapper" onclick="togglePower()">
+                    <i class="fas fa-power-off power-icon"></i>
+                </div>
+                <div class="status-led" id="led"></div>
 
-            <div class="instructions">
-                POWER ON TO START
-                <span>SWIPE TO CHANGE CHANNEL</span>
-                <span>ARROWS: VOL / CH</span>
+                <div class="instructions">
+                    POWER ON TO START
+                    <span>SWIPE TO CHANGE CHANNEL</span>
+                    <span>ARROWS: VOL / CH</span>
+                </div>
             </div>
         </div>
     </div>
@@ -410,15 +444,24 @@
         let volume = 100;
 
         // Channel Data
-        // 1: NBA, 2: Comedy (Backup)
         let playlistData = {
-            1: ['_nxTNmM9lfY'], // Default fallback if fetch fails
+            1: ['_nxTNmM9lfY'],
             2: ['dQw4w9WgXcQ', 'L_jWHffIx5E']
         };
 
-        // Player Instances
-        let players = {};
-        let playerStates = { 1: 0, 2: 0 }; // Current video index per channel
+        // Player Architecture: 2 channels, each has 2 players (A/B) for double buffering
+        // players[channelId] = { 'A': YT.Player, 'B': YT.Player }
+        let players = {
+            1: { A: null, B: null },
+            2: { A: null, B: null }
+        };
+
+        let channelState = {
+            1: { activeSlot: 'A', videoIndex: 0, nextPrepared: false }, // activeSlot: 'A' or 'B'
+            2: { activeSlot: 'A', videoIndex: 0, nextPrepared: false }
+        };
+
+        let pollInterval = null;
 
         // --- INITIALIZATION ---
         async function loadPlaylists() {
@@ -434,107 +477,207 @@
 
         function onYouTubeIframeAPIReady() {
             loadPlaylists().then(() => {
-                createPlayer(1);
-                createPlayer(2);
+                initChannel(1);
+                initChannel(2);
+                startPoller();
             });
         }
 
-        function createPlayer(channelId) {
-            // Create container
+        function initChannel(id) {
+            // Create A and B players
+            createPlayerInstance(id, 'A', 0); // Load 1st video
+            createPlayerInstance(id, 'B', 1); // Preload 2nd video
+        }
+
+        function createPlayerInstance(channelId, slot, vidIdx) {
+            let container = document.getElementById('players-container');
+            let divId = `player-${channelId}-${slot}`;
+
             let div = document.createElement('div');
-            div.id = `player-${channelId}`;
-            div.className = `video-player ${channelId === 1 ? 'active' : ''}`;
-            document.getElementById('players-container').appendChild(div);
+            div.id = divId;
+            // Only Channel 1 Slot A starts visible-ish (opacity handled by CSS active class)
+            let isInitiallyActive = (channelId === 1 && slot === 'A');
+            div.className = `video-player ${isInitiallyActive ? 'active' : ''}`;
+            container.appendChild(div);
 
-            let videoId = playlistData[channelId][0];
+            // Safety check for index
+            let vIds = playlistData[channelId];
+            let safeIndex = vidIdx % vIds.length;
+            let videoId = vIds[safeIndex];
 
-            players[channelId] = new YT.Player(`player-${channelId}`, {
+            players[channelId][slot] = new YT.Player(divId, {
                 videoId: videoId,
                 playerVars: {
                     'autoplay': 1, 'controls': 0, 'disablekb': 1, 'fs': 0,
                     'modestbranding': 1, 'rel': 0, 'iv_load_policy': 3, 'mute': 1
                 },
                 events: {
-                    'onReady': (e) => onPlayerReady(channelId, e),
-                    'onStateChange': (e) => onPlayerStateChange(channelId, e)
+                    'onReady': (e) => {
+                        e.target.mute(); // Always start muted
+                        // If it's the very first video of CH1, consistent with logic:
+                        if (isTVOn && channelId === currentChannel && slot === channelState[channelId].activeSlot) {
+                            e.target.unMute();
+                            e.target.setVolume(volume);
+                        }
+                        e.target.playVideo();
+                        // Note: For Background (Slot B), it will play muted. 
+                        // Logic below ensures it pauses or loops if needed, 
+                        // but user specifically asked for "starts playing -1 before current ends".
+                        // Use pauseVideo() immediately for 'B' if we want to wait?
+                        // Actually, 'B' (next) should ideally be PAUSED at 0:00 until the trigger.
+                        if (!isInitiallyActive) {
+                            // Wait a bit for it to buffer then pause? 
+                            // Simply pausing immediately onReady works for preloading usually.
+                            setTimeout(() => e.target.pauseVideo(), 1000);
+                        }
+                    },
+                    'onStateChange': (e) => {
+                        // We rely mostly on polling for transitions, but we handle looping here if needed
+                    }
                 }
             });
         }
 
-        // --- PLAYER EVENTS ---
-        function onPlayerReady(id, event) {
-            // Mute all initially. logic: only active unmuted IF tv is on.
-            event.target.mute();
-            // Try to verify playback to buffer it, but pause if TV is off.
-            // If we want "Preloading", we let them play muted in background?
-            // User said: "All iframes load... only active has sound".
-            // To save bandwidth/CPU, maybe we pause them immediately after load, 
-            // and only play when TV is ON.
-            // BUT strict requirement: "Transitions... more natural".
-            // Ideally: Play muted loop.
-            event.target.playVideo();
+        // --- POLLER FOR SEAMLESS TRANSITIONS ---
+        function startPoller() {
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(() => {
+                if (!isTVOn) return;
+
+                // Check Active Channel status
+                let chState = channelState[currentChannel];
+                let currentSlot = chState.activeSlot;
+                let activePlayer = players[currentChannel][currentSlot];
+
+                if (activePlayer && activePlayer.getCurrentTime && activePlayer.getDuration) {
+                    let now = activePlayer.getCurrentTime();
+                    let duration = activePlayer.getDuration();
+
+                    if (duration > 0) {
+                        let timeLeft = duration - now;
+
+                        // 1. Trigger "Next" Start (1 second before end)
+                        // channelState.nextPrepared prevents double triggering
+                        if (timeLeft <= 1.5 && !chState.nextPrepared) {
+                            // Prepare Next Slot
+                            let nextSlot = currentSlot === 'A' ? 'B' : 'A';
+                            let nextPlayer = players[currentChannel][nextSlot];
+
+                            // Start next video muted
+                            if (nextPlayer) {
+                                nextPlayer.mute();
+                                nextPlayer.playVideo();
+                                console.log("Pre-starting next video...");
+                            }
+                            chState.nextPrepared = true;
+                        }
+
+                        // 2. The Swap (At End)
+                        // Use a small buffer (0.2s) instead of 0 to avoid black frame
+                        if (timeLeft <= 0.2) {
+                            performSwap(currentChannel);
+                        }
+                    }
+                }
+            }, 200); // Check 5 times a second
         }
 
-        function onPlayerStateChange(id, event) {
-            // Loop logic
-            if (event.data === YT.PlayerState.ENDED) {
-                let nextIndex = (playerStates[id] + 1) % playlistData[id].length;
-                playerStates[id] = nextIndex;
-                players[id].loadVideoById(playlistData[id][nextIndex]);
+        function performSwap(channelId) {
+            let chState = channelState[channelId];
+            let oldSlot = chState.activeSlot;
+            let newSlot = oldSlot === 'A' ? 'B' : 'A';
+
+            let oldPlayer = players[channelId][oldSlot];
+            let newPlayer = players[channelId][newSlot];
+
+            // 1. Visual Swap
+            // document.getElementById(`player-${channelId}-${oldSlot}`).classList.remove('active'); // Wait a moment?
+            // Actually, just make NEW active (z-index higher) then hide old
+            let newDiv = document.getElementById(`player-${channelId}-${newSlot}`);
+            let oldDiv = document.getElementById(`player-${channelId}-${oldSlot}`);
+
+            newDiv.classList.add('active'); // Visible
+
+            // 2. Audio Swap
+            if (channelId === currentChannel && isTVOn) {
+                newPlayer.unMute();
+                newPlayer.setVolume(volume);
             }
+            oldPlayer.mute();
+            oldDiv.classList.remove('active'); // Hide old
+
+            // 3. Update State
+            chState.activeSlot = newSlot;
+            chState.videoIndex = (chState.videoIndex + 1) % playlistData[channelId].length;
+            chState.nextPrepared = false; // Reset flag for next cycle
+
+            // 4. Recycle Old Player (Load Next+1)
+            let nextNextIndex = (chState.videoIndex + 1) % playlistData[channelId].length;
+            let nextNextId = playlistData[channelId][nextNextIndex];
+
+            // Give it a moment to finish smoothly, then reset
+            setTimeout(() => {
+                oldPlayer.stopVideo();
+                oldPlayer.loadVideoById(nextNextId);
+                // Pause it so it waits for its turn
+                setTimeout(() => oldPlayer.pauseVideo(), 1000);
+            }, 1000);
         }
 
         // --- POWER LOGIC ---
         function togglePower() {
             isTVOn = !isTVOn;
             let frame = document.getElementById('tv-frame');
-            let led = document.getElementById('led');
 
             if (isTVOn) {
                 frame.classList.add('tv-playing');
                 frame.classList.add('tv-on');
-                // Unmute active, ensuring others are muted
-                updateAudioState();
+
+                // Wake up active player
+                let slot = channelState[currentChannel].activeSlot;
+                let p = players[currentChannel][slot];
+                if (p) { p.unMute(); p.setVolume(volume); p.playVideo(); }
+
                 showOSD("POWER ON");
             } else {
                 frame.classList.remove('tv-playing');
                 frame.classList.remove('tv-on');
-                // Mute all
-                Object.values(players).forEach(p => p && p.mute && p.mute());
+                // Mute/Pause all
+                for (let c in players) {
+                    if (players[c].A) players[c].A.mute();
+                    if (players[c].B) players[c].B.mute();
+                }
             }
         }
 
-        function updateAudioState() {
-            if (!isTVOn) return;
-            Object.keys(players).forEach(key => {
-                let p = players[key];
-                if (p && p.unMute) {
-                    if (parseInt(key) === currentChannel) {
-                        p.unMute();
-                        p.setVolume(volume);
-                        if (typeof p.playVideo === 'function') p.playVideo(); // Force play on interaction (for mobile)
-                    } else {
-                        p.mute();
-                    }
-                }
-            });
-        }
-
         // --- CONTROLS ---
-        function switchChannel(direction) { // 1 for next, -1 for prev
+        function switchChannel(direction) {
             if (!isTVOn) return;
 
+            // Mute Current
             let oldCh = currentChannel;
-            if (direction > 0) currentChannel = 2; // Simple toggle for 2 channels
+            let oldSlot = channelState[oldCh].activeSlot;
+            players[oldCh][oldSlot].mute();
+
+            // Change State
+            if (direction > 0) currentChannel = 2;
             else currentChannel = 1;
 
             if (oldCh !== currentChannel) {
-                // Visual Swap
                 showStatic();
                 setTimeout(() => {
-                    document.getElementById(`player-${oldCh}`).classList.remove('active');
-                    document.getElementById(`player-${currentChannel}`).classList.add('active');
-                    updateAudioState();
+                    // Hide Old Channel Visuals
+                    document.getElementById(`player-${oldCh}-A`).classList.remove('active');
+                    document.getElementById(`player-${oldCh}-B`).classList.remove('active');
+
+                    // Show New Channel Active Visual
+                    let newSlot = channelState[currentChannel].activeSlot;
+                    document.getElementById(`player-${currentChannel}-${newSlot}`).classList.add('active');
+
+                    // Audio
+                    let p = players[currentChannel][newSlot];
+                    p.unMute(); p.setVolume(volume); p.playVideo();
+
                     hideStatic();
                     let name = currentChannel === 1 ? "NBA" : "COMEDY";
                     showOSD(`CH 0${currentChannel} ${name}`);
@@ -545,7 +688,9 @@
         function adjustVolume(delta) {
             if (!isTVOn) return;
             volume = Math.max(0, Math.min(100, volume + delta));
-            if (players[currentChannel]) players[currentChannel].setVolume(volume);
+            let slot = channelState[currentChannel].activeSlot;
+            let p = players[currentChannel][slot];
+            if (p) p.setVolume(volume);
             showOSD(`VOL ${volume}%`);
         }
 
@@ -561,33 +706,22 @@
         function hideStatic() { document.getElementById('static-overlay').style.opacity = 0; }
 
         // --- INPUT HANDLING ---
-
-        // Keyboard
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space' || e.code === 'Enter') togglePower();
             if (!isTVOn) return;
-
             if (e.code === 'ArrowUp') switchChannel(1);
             if (e.code === 'ArrowDown') switchChannel(-1);
             if (e.code === 'ArrowRight') adjustVolume(10);
             if (e.code === 'ArrowLeft') adjustVolume(-10);
         });
 
-        // Touch / Swipe
+        // Touch
         let touchStartY = 0;
-        document.addEventListener('touchstart', e => {
-            touchStartY = e.touches[0].clientY;
-        }, { passive: false });
-
+        document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: false });
         document.addEventListener('touchend', e => {
             if (!isTVOn) return;
-            let touchEndY = e.changedTouches[0].clientY;
-            let diff = touchStartY - touchEndY;
-
-            if (Math.abs(diff) > 50) { // Threshold
-                if (diff > 0) switchChannel(1); // Swipe Up -> Next
-                else switchChannel(-1);        // Swipe Down -> Prev
-            }
+            let diff = touchStartY - e.changedTouches[0].clientY;
+            if (Math.abs(diff) > 50) { if (diff > 0) switchChannel(1); else switchChannel(-1); }
         }, { passive: false });
 
     </script>
