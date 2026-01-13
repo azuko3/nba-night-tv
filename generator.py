@@ -5,6 +5,7 @@ import os
 import re
 import json
 import argparse
+import random
 from dataclasses import dataclass
 from datetime import datetime, timezone, date, timedelta
 from typing import Any, Dict, List, Optional, Tuple
@@ -78,7 +79,11 @@ def resolve_active_day(videos: List[Video], now_utc: datetime) -> Tuple[date, bo
     valid_dates = [d for d, c in buckets.items() if c >= RULE_OF_3]
     
     if not valid_dates:
-        selected = max((v.game_date for v in dated_videos if v.game_date), default=now_utc.date())
+        dates_only = [v.game_date for v in dated_videos if v.game_date]
+        if dates_only:
+             selected = max(dates_only)
+        else:
+             selected = now_utc.date()
     else:
         selected = sorted(valid_dates, reverse=True)[0]
     
@@ -113,7 +118,6 @@ def build_action_playlist(active_day: date, videos: List[Video], min_sec: int) -
     rest_pool = [v for v in weekly if v not in plays_week]
     best_rest = get_smart_filler(rest_pool, 5)
     
-    import random
     rng = random.Random(f"action:{active_day}")
     for l in [block_a, block_b, block_daily_rest]: rng.shuffle(l)
     
@@ -135,7 +139,6 @@ def build_inside_playlist(active_day: date, videos: List[Video], now_utc: dateti
         elif _utc(v.published_at) > cutoff: rolling.append(v)
         
     best_rolling = get_smart_filler(rolling, 15)
-    import random
     rng = random.Random(f"inside:{active_day}")
     rng.shuffle(daily)
     
@@ -147,30 +150,45 @@ def build_inside_playlist(active_day: date, videos: List[Video], now_utc: dateti
     return daily + chunked
 
 def youtube_fetch(api_key, ch_id, n):
-    yt = build("youtube", "v3", developerKey=api_key)
-    uploads_id = yt.channels().list(part="contentDetails", id=ch_id).execute()["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
-    videos, next_page = [], None
-    while len(videos) < n:
-        pl = yt.playlistItems().list(part="contentDetails", playlistId=uploads_id, maxResults=min(50, n-len(videos)), pageToken=next_page).execute()
-        vid_ids = [i["contentDetails"]["videoId"] for i in pl.get("items", [])]
-        if not vid_ids: break
-        v_resp = yt.videos().list(part="snippet,contentDetails,statistics", id=",".join(vid_ids)).execute()
-        videos.extend(v_resp.get("items", []))
-        next_page = pl.get("nextPageToken")
-        if not next_page: break
-    return videos[:n]
+    if not build: return []
+    try:
+        yt = build("youtube", "v3", developerKey=api_key)
+        # Safe call to get Uploads Playlist ID
+        ch_resp = yt.channels().list(part="contentDetails", id=ch_id).execute()
+        
+        if "items" not in ch_resp or not ch_resp["items"]:
+            print(f"ERROR: Could not find channel {ch_id}. Check API Key quotas/permissions.")
+            return []
+            
+        uploads_id = ch_resp["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+
+        videos, next_page = [], None
+        while len(videos) < n:
+            pl = yt.playlistItems().list(part="contentDetails", playlistId=uploads_id, maxResults=min(50, n-len(videos)), pageToken=next_page).execute()
+            vid_ids = [i["contentDetails"]["videoId"] for i in pl.get("items", [])]
+            if not vid_ids: break
+            
+            v_resp = yt.videos().list(part="snippet,contentDetails,statistics", id=",".join(vid_ids)).execute()
+            videos.extend(v_resp.get("items", []))
+            
+            next_page = pl.get("nextPageToken")
+            if not next_page: break
+        return videos[:n]
+    except Exception as e:
+        print(f"API ERROR: {e}")
+        return []
 
 def fetch_vault(api_key, ids):
-    if not ids: return []
-    yt = build("youtube", "v3", developerKey=api_key)
-    videos = []
-    for i in range(0, len(ids), 50):
-        batch = ids[i:i+50]
-        try:
+    if not ids or not build: return []
+    try:
+        yt = build("youtube", "v3", developerKey=api_key)
+        videos = []
+        for i in range(0, len(ids), 50):
+            batch = ids[i:i+50]
             resp = yt.videos().list(part="snippet,contentDetails,statistics", id=",".join(batch)).execute()
             videos.extend(resp.get("items", []))
-        except: pass
-    return videos
+        return videos
+    except: return []
 
 def main():
     parser = argparse.ArgumentParser()
@@ -184,37 +202,59 @@ def main():
     print("Fetching feed...")
     feed = youtube_fetch(args.api_key, args.channel_id, FETCH_N)
     
+    if not feed:
+        print("WARNING: No videos fetched. Possible API Key error.")
+    
     print("Fetching vault...")
-    with open(args.vault_file) as f: vault_ids = json.load(f)
+    vault_ids = []
+    if os.path.exists(args.vault_file):
+        with open(args.vault_file) as f: vault_ids = json.load(f)
     vault_items = fetch_vault(args.api_key, vault_ids)
 
-    # BUILD
+    # Load backup if exists
     last_good = None
     if os.path.exists(args.last_good):
         try: 
             with open(args.last_good) as f: last_good = json.load(f)
         except: pass
         
-    logs, parsed, regex_fail = [], [], 0
+    parsed, regex_fail = [], 0
     now_utc = datetime.now(timezone.utc)
     
     for it in feed:
         try:
             dur = duration_iso8601_to_seconds(it["contentDetails"]["duration"])
-            if not global_filter(it["snippet"]["title"], dur): continue
-            gd = parse_game_date(it["snippet"]["title"])
+            title = it["snippet"]["title"]
+            if not global_filter(title, dur): continue
+            
+            gd = parse_game_date(title)
             if not gd: regex_fail += 1
-            parsed.append(Video(it["id"], it["snippet"]["title"], datetime.fromisoformat(it["snippet"]["publishedAt"].replace("Z", "+00:00")), dur, gd, int(it.get("statistics",{}).get("likeCount",0)), int(it.get("statistics",{}).get("viewCount",0))))
+            
+            pub = datetime.fromisoformat(it["snippet"]["publishedAt"].replace("Z", "+00:00"))
+            likes = int(it.get("statistics",{}).get("likeCount",0))
+            views = int(it.get("statistics",{}).get("viewCount",0))
+            
+            parsed.append(Video(it["id"], title, pub, dur, gd, likes, views))
         except: continue
 
+    # Safety Net
     ratio = regex_fail / max(1, len(feed))
-    if ratio > CATASTROPHIC_FAIL_RATIO:
-        print("CRITICAL FAIL. Using last good.")
+    if ratio > CATASTROPHIC_FAIL_RATIO and len(feed) > 0:
+        print(f"CRITICAL FAIL (Ratio {ratio}). Using last good.")
         if last_good:
-            with open(args.out, "w") as f: json.dump(last_good, f)
+            with open(args.out, "w") as f: json.dump(last_good, f, indent=2)
             return
     
+    # If fetch failed completely, use last good
+    if not parsed and last_good:
+        print("Fetch empty. Using last good.")
+        with open(args.out, "w") as f: json.dump(last_good, f, indent=2)
+        return
+
+    # Assuming we have data or first run
     active_day, is_dark = resolve_active_day(parsed, now_utc)
+    print(f"Active Day: {active_day}, Dark: {is_dark}")
+
     recap, action, inside = [], [], []
     for v in parsed:
         ch = assign_channel_waterfall(v)
@@ -223,7 +263,6 @@ def main():
         elif ch == "action": action.append(v)
         elif ch == "inside": inside.append(v)
         
-    import random
     rng = random.Random(f"recap:{active_day}")
     recap_final = [v for v in recap if v.game_date == active_day]
     rng.shuffle(recap_final)
@@ -233,33 +272,4 @@ def main():
     
     vault_parsed = []
     for it in vault_items:
-        try: vault_parsed.append(Video(it["id"], it["snippet"]["title"], now_utc, duration_iso8601_to_seconds(it["contentDetails"]["duration"]), None))
-        except: pass
-    
-    today_str = now_utc.strftime("%b %d")
-    vault_today = [v for v in vault_parsed if today_str in v.title]
-    vault_rest = [v for v in vault_parsed if v not in vault_today]
-    rng_v = random.Random(f"vault:{active_day}")
-    rng_v.shuffle(vault_today); rng_v.shuffle(vault_rest)
-    vault_final = (vault_today + vault_rest)[:20]
-
-    manifest = {
-        "meta": {"generated_at": now_utc.isoformat(), "active_day": active_day.isoformat(), "is_dark": is_dark},
-        "channels": {
-            "recap": [{"id": v.id, "title": v.title, "duration": v.duration_seconds} for v in recap_final],
-            "action": [{"id": v.id, "title": v.title, "duration": v.duration_seconds} for v in action_final],
-            "inside": [{"id": v.id, "title": v.title, "duration": v.duration_seconds} for v in inside_final],
-            "vault": [{"id": v.id, "title": v.title, "duration": v.duration_seconds} for v in vault_final],
-        }
-    }
-    
-    tmp = args.out + ".tmp"
-    with open(tmp, "w") as f: json.dump(manifest, f)
-    os.replace(tmp, args.out)
-    
-    tmp2 = args.last_good + ".tmp"
-    with open(tmp2, "w") as f: json.dump(manifest, f)
-    os.replace(tmp2, args.last_good)
-
-if __name__ == "__main__":
-    main()
+        try
