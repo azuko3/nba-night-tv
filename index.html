@@ -13,7 +13,7 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #000;
+            background-color: #111;
             overflow: hidden;
             font-family: sans-serif;
         }
@@ -25,26 +25,33 @@
             width: 100vw;
             height: 100vh;
             background: #000;
+            overflow: hidden;
+        }
+
+        /* The Blue/Retro TV Frame Overlay */
+        #tv-bezel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            /* Above player */
+            pointer-events: none;
+            /* Let clicks pass through */
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9), inset 0 0 10px 2px rgba(0, 50, 200, 0.3);
+            /* Subtle blue glow/frame */
+            border: 5px solid #222;
         }
 
         #player-div {
             width: 100%;
             height: 100%;
             pointer-events: none;
-            /* Disables mouse interaction */
+            /* Disables mouse interaction with YouTube directly */
         }
 
-        #tv-glass {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 5;
-            background: transparent;
-        }
-
-        /* Splash Screen */
+        /* Splash Screen (TV OFF State) */
         #splash-screen {
             position: absolute;
             top: 0;
@@ -66,6 +73,33 @@
             margin-bottom: 2rem;
             letter-spacing: 5px;
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: flicker 2s infinite;
+        }
+
+        @keyframes flicker {
+            0% {
+                opacity: 1;
+            }
+
+            5% {
+                opacity: 0.8;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            15% {
+                opacity: 0.3;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
 
         #start-btn {
@@ -79,6 +113,9 @@
             border-radius: 50px;
             box-shadow: 0 0 20px rgba(211, 47, 47, 0.5);
             transition: transform 0.2s;
+            z-index: 101;
+            /* Clickable */
+            pointer-events: auto;
         }
 
         #start-btn:hover {
@@ -133,7 +170,8 @@
             padding: 15px;
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 20;
+            z-index: 200;
+            /* Highest z-index to be clickable */
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -154,6 +192,7 @@
             border-radius: 6px;
             cursor: pointer;
             text-align: left;
+            font-weight: bold;
         }
 
         .channel-btn:hover {
@@ -164,6 +203,17 @@
         .channel-btn.active {
             background: #d32f2f;
             color: white;
+        }
+
+        .power-btn {
+            background: #d32f2f;
+            color: white;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .power-btn:hover {
+            background: #b71c1c;
         }
 
         #channel-display {
@@ -183,32 +233,37 @@
 <body>
 
     <div id="tv-frame">
-        <!-- Splash Screen -->
+        <!-- Visual Bezel/Frame -->
+        <div id="tv-bezel"></div>
+
+        <!-- Splash Screen (OFF State) -->
         <div id="splash-screen">
             <h1>NBA NIGHT TV</h1>
-            <button id="start-btn" onclick="startTV()">POWER ON</button>
+            <button id="start-btn" onclick="togglePower()">POWER ON</button>
         </div>
 
-        <div id="channel-display">CH 01</div>
-
+        <!-- Error / Status Messages -->
         <div id="error-screen">
             <h1>NO SIGNAL</h1>
             <p>DOWNLOADING DATA...</p>
         </div>
 
+        <div id="channel-display">CH 01</div>
+
         <!-- Static Overlay for transitions -->
         <div id="static-overlay"></div>
 
-        <div id="tv-glass"></div>
-
+        <!-- Video Player -->
         <div id="player-div"></div>
 
+        <!-- Remote Control -->
         <div id="remote-control">
-            <button class="channel-btn" onclick="toggleFullScreen()">⚡ FULLSCREEN</button>
-            <div style="height:10px;"></div>
+            <button class="channel-btn power-btn" onclick="togglePower()">⏻ ON/OFF</button>
             <button class="channel-btn active" onclick="switchChannel(1)">01 NBA</button>
             <button class="channel-btn" onclick="switchChannel(2)">02 Comedy</button>
             <button class="channel-btn" onclick="playNextVideo()">⏭ SKIP</button>
+            <button class="channel-btn" style="font-size: 0.8rem; opacity: 0.7;" onclick="toggleFullScreen()">[ ]
+                Fullscreen</button>
         </div>
     </div>
 
@@ -224,24 +279,19 @@
         let player;
         let isTVOn = false;
 
-        // --- 1. FETCH PLAYLIST (FROM LOCAL JSON FILE) ---
+        // --- 1. FETCH PLAYLIST ---
         async function loadPlaylistData() {
             console.log("Fetching playlist.json from server...");
             try {
-                // Append timestamp to prevent browser caching
                 const response = await fetch('playlist.json?t=' + new Date().getTime());
-
                 if (!response.ok) throw new Error("File not found");
-
                 const data = await response.json();
-
                 if (data["1"] && data["1"].length > 0) {
                     channels[1] = data["1"];
-                    console.log("Playlist loaded successfully:", channels[1]);
+                    console.log("Playlist loaded:", channels[1]);
                 }
             } catch (error) {
-                console.warn("Could not load playlist.json (using backup):", error);
-                // Backup IDs if file is missing
+                console.warn("Using backup playlist:", error);
                 channels[1] = ['dQw4w9WgXcQ'];
             }
         }
@@ -253,26 +303,18 @@
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         function onYouTubeIframeAPIReady() {
-            // Load data first, then initialize player (but keep hidden until Start)
             loadPlaylistData().then(() => {
                 initPlayer();
             });
         }
 
         function initPlayer() {
-            // Safe check: ensure channel 1 has at least one video
             let startVideo = (channels[1].length > 0) ? channels[1][0] : 'dQw4w9WgXcQ';
-
             player = new YT.Player('player-div', {
                 videoId: startVideo,
                 playerVars: {
-                    'autoplay': 0,      // Wait for user interaction
-                    'controls': 0,
-                    'disablekb': 1,
-                    'fs': 0,
-                    'modestbranding': 1,
-                    'rel': 0,
-                    'iv_load_policy': 3 // Hide annotations
+                    'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0,
+                    'modestbranding': 1, 'rel': 0, 'iv_load_policy': 3
                 },
                 events: {
                     'onReady': onPlayerReady,
@@ -282,21 +324,34 @@
             });
         }
 
-        // --- USER INTERACTION START ---
-        function startTV() {
-            isTVOn = true;
-            document.getElementById('splash-screen').style.opacity = 0;
-            setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 500);
+        // --- POWER LOGIC ---
+        function togglePower() {
+            let splash = document.getElementById('splash-screen');
 
-            if (player && player.playVideo) {
-                player.playVideo();
-                showChannelDisplay("NBA TV");
+            if (!isTVOn) {
+                // TURN ON
+                isTVOn = true;
+                splash.style.opacity = 0;
+                setTimeout(() => splash.style.display = 'none', 500);
+                if (player && player.playVideo) {
+                    player.playVideo();
+                    showChannelDisplay("NBA TV");
+                }
+            } else {
+                // TURN OFF
+                isTVOn = false;
+                splash.style.display = 'flex';
+                setTimeout(() => splash.style.opacity = 1, 10); // Fade in
+                if (player && player.stopVideo) {
+                    player.stopVideo(); // Stop playback
+                }
+                document.getElementById('start-btn').innerText = "POWER ON";
             }
         }
 
         // --- EVENT HANDLERS ---
         function onPlayerReady(event) {
-            // Do nothing until startTV() is called
+            // Ready, waiting for user to click POWER ON
         }
 
         function onPlayerStateChange(event) {
@@ -310,7 +365,6 @@
         }
 
         function onPlayerError(event) {
-            // Skip video if blocked
             if ([100, 101, 150].includes(event.data)) {
                 toggleErrorMode(true);
                 setTimeout(() => { playNextVideo(); }, 1500);
@@ -319,11 +373,11 @@
 
         // --- LOGIC ---
         function playNextVideo() {
+            if (!isTVOn) return;
             currentVideoIndex++;
             if (currentVideoIndex >= channels[currentChannelId].length) currentVideoIndex = 0;
-
             if (player && player.loadVideoById) {
-                showStatic(); // Mask transition
+                showStatic();
                 player.loadVideoById(channels[currentChannelId][currentVideoIndex]);
                 toggleErrorMode(false);
             }
@@ -336,19 +390,14 @@
             showChannelDisplay(id === 1 ? "NBA" : "COMEDY");
 
             if (player) {
-                showStatic(); // Mask transition
+                showStatic();
                 setTimeout(() => player.loadVideoById(channels[id][0]), 300);
             }
         }
 
         // --- UI HELPERS ---
-        function showStatic() {
-            document.getElementById('static-overlay').style.opacity = 0.5;
-        }
-
-        function hideStatic() {
-            document.getElementById('static-overlay').style.opacity = 0;
-        }
+        function showStatic() { document.getElementById('static-overlay').style.opacity = 0.5; }
+        function hideStatic() { document.getElementById('static-overlay').style.opacity = 0; }
 
         function toggleErrorMode(show) {
             document.getElementById('error-screen').classList.toggle('show-error', show);
@@ -372,6 +421,7 @@
 
         // --- KEYBOARD CONTROLS ---
         document.addEventListener('keydown', function (event) {
+            if (event.key === ' ' || event.key === 'Enter') togglePower(); // Space/Enter to Start/Stop
             if (!isTVOn) return;
             if (event.key === 'ArrowRight' || event.key === 'ArrowUp') switchChannel(1);
             if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') switchChannel(2);
