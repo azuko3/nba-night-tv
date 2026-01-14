@@ -1,12 +1,18 @@
 name: Update TV Schedule
 
 on:
+  # 1. Standard Schedule (06:50 UTC = 08:50 Israel time)
   schedule:
-    # Runs at 06:00 UTC every day (approx 08:00/09:00 Israel time)
     - cron: '50 6 * * *'
   
-  # Allows you to run this workflow manually from the Actions tab
+  # 2. Manual Trigger (Allows running manually from the Actions tab)
   workflow_dispatch:
+  
+  # 3. Push Trigger - Runs the workflow every time code is pushed to 'main'
+  # This is key for immediate debugging!
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -16,31 +22,26 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    # 1. Check out the repository content
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # 2. Set up Python environment
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
 
-    # 3. Install the 'requests' library needed for the script
     - name: Install dependencies
       run: pip install requests
 
-    # 4. Run the Python script (Injecting the Secret Key)
     - name: Fetch NBA Videos
       env:
         YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
       run: python scripts/fetch_nba.py
 
-    # 5. Commit and Push the new playlist.json back to the repo
     - name: Commit and Push changes
       run: |
         git config --global user.name 'TV Updater Bot'
         git config --global user.email 'bot@noreply.github.com'
         git add playlist.json
-        # Only commit if there are changes (prevents empty commit errors)
+        # Check if there are changes before committing to avoid empty commit errors
         git diff --quiet && git diff --staged --quiet || (git commit -m "Daily Playlist Update" && git push)
