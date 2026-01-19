@@ -9,7 +9,8 @@ const isDebug = urlParams.get('debug') === '1';
 
 // Channel Data
 let playlistData = {
-    1: ['_nxTNmM9lfY'],
+    // Playlist can be array of strings (legacy) or objects {id, title}
+    1: [{ id: '_nxTNmM9lfY', title: 'NBA Highlights' }],
     2: ['dQw4w9WgXcQ', 'L_jWHffIx5E']
 };
 
@@ -45,7 +46,7 @@ const CHANNELS = {
 
 // Fallback Playlist (Offline Mode)
 const FALLBACK_PLAYLIST = {
-    1: ['_nxTNmM9lfY', 'Ia-FcV1AREo'], // Static NBA clips
+    1: [{ id: '_nxTNmM9lfY', title: 'Fallback NBA' }, { id: 'Ia-FcV1AREo', title: 'Fallback NBA 2' }],
     2: ['dQw4w9WgXcQ']
 };
 
@@ -63,7 +64,7 @@ async function loadPlaylists() {
     } catch (e) {
         console.warn("Fetch failed, using FALLBACK", e);
         playlistData = { ...FALLBACK_PLAYLIST };
-        showOSD("OFFLINE MODE");
+        showSystemOSD("OFFLINE MODE");
     }
 }
 
@@ -96,10 +97,9 @@ function createPlayerInstance(channelId, slot, vidIdx) {
     div.className = `video-player ${isInitiallyActive ? 'active' : ''}`;
     container.appendChild(div);
 
-    // Safety check for index
-    let vIds = playlistData[channelId];
-    let safeIndex = vidIdx % vIds.length;
-    let videoId = vIds[safeIndex];
+    // Handle both String (Legacy) and Object (New) formats
+    let item = playlistData[channelId][vidIdx % playlistData[channelId].length];
+    let videoId = (typeof item === 'string') ? item : item.id;
 
     // Check for debug flags (Use global isDebug)
     const showControls = isDebug ? 1 : 0;
@@ -241,16 +241,24 @@ function performSwap(channelId) {
 
     // 4. Recycle Old Player (Load Next+1)
     let nextNextIndex = (chState.videoIndex + 1) % playlistData[channelId].length;
-    let nextNextId = playlistData[channelId][nextNextIndex];
+    let nextNextItem = playlistData[channelId][nextNextIndex];
+    let nextNextId = (typeof nextNextItem === 'string') ? nextNextItem : nextNextItem.id;
 
     setTimeout(() => {
         oldPlayer.stopVideo();
-        oldPlayer.loadVideoById(nextNextId);
+        oldPlayer.loadVideoById(nextNextId); // YT API handles string ID
         // Background players: Play to buffer, then PAUSE
         oldPlayer.playVideo();
         oldPlayer.mute();
-        setTimeout(() => oldPlayer.pauseVideo(), 1500); // The key fix
+        setTimeout(() => oldPlayer.pauseVideo(), 1500);
     }, 1000);
+
+    // Show Title OSD
+    let currentItem = playlistData[channelId][chState.videoIndex];
+    let title = (typeof currentItem === 'string') ? "" : currentItem.title;
+    if (channelId === currentChannel && title) {
+        showOSD(title);
+    }
 }
 
 // --- POWER LOGIC ---
@@ -267,7 +275,16 @@ function togglePower() {
         let p = players[currentChannel][slot];
         if (p) { p.unMute(); p.setVolume(volume); p.playVideo(); }
 
-        showOSD("POWER ON");
+        showSystemOSD("POWER ON");
+
+        // Show Title after "POWER ON" fades
+        setTimeout(() => {
+            if (isTVOn) {
+                let currentItem = playlistData[currentChannel][channelState[currentChannel].videoIndex];
+                let title = (typeof currentItem === 'string') ? "" : currentItem.title;
+                if (title) showOSD(title);
+            }
+        }, 2200);
     } else {
         frame.classList.remove('tv-playing');
         frame.classList.remove('tv-on');
@@ -325,7 +342,17 @@ function switchChannel(direction) {
 
             // Generic Name Lookup
             let name = (CHANNELS[currentChannel] && CHANNELS[currentChannel].name) || "UNK";
-            showOSD(`CH 0${currentChannel} ${name}`);
+            showSystemOSD(`CH 0${currentChannel} ${name}`);
+
+            // Show Title after channel name fades (2.5s later)
+            setTimeout(() => {
+                if (channelId === currentChannel && isTVOn) {
+                    let currentItem = playlistData[currentChannel][channelState[currentChannel].videoIndex];
+                    let title = (typeof currentItem === 'string') ? "" : currentItem.title;
+                    if (title) showOSD(title);
+                }
+            }, 2500);
+
         }, 300);
     }
 }
@@ -336,15 +363,48 @@ function adjustVolume(delta) {
     let slot = channelState[currentChannel].activeSlot;
     let p = players[currentChannel][slot];
     if (p) p.setVolume(volume);
-    showOSD(`VOL ${volume}%`);
+    showSystemOSD(`VOL ${volume}%`);
+}
+
+function showSystemOSD(text) {
+    let osd = document.getElementById('osd-system');
+    osd.innerText = text;
+    osd.style.display = 'block';
+    if (window.sysOsdTimer) clearTimeout(window.sysOsdTimer);
+    window.sysOsdTimer = setTimeout(() => osd.style.display = 'none', 2000);
 }
 
 function showOSD(text) {
     let osd = document.getElementById('osd-display');
-    osd.innerText = text;
-    osd.style.display = 'block';
+
+    // Broadcast Style Logic
+    let htmlContent = '';
+
+    // Check for "Split" keyword (usually found in YouTube titles)
+    const splitKey = " Full Game Highlights";
+    let splitIdx = text.indexOf(splitKey);
+
+    if (splitIdx > -1) {
+        // It's a Game Title
+        let mainTitle = text.substring(0, splitIdx);
+        let subTitle = text.substring(splitIdx).trim(); // Keep "Full Game Highlights..."
+
+        htmlContent = `
+            <div class="osd-label">NOW PLAYING</div>
+            <div class="osd-title">${mainTitle}</div>
+            <div class="osd-subtitle">${subTitle}</div>
+        `;
+    } else {
+        // Simple Message (e.g. POWER ON, CH 01)
+        htmlContent = `<div class="osd-title" style="margin-bottom:0">${text}</div>`;
+    }
+
+    osd.innerHTML = htmlContent;
+    osd.style.display = 'flex'; // Flex for centering
+
     if (window.osdTimer) clearTimeout(window.osdTimer);
-    window.osdTimer = setTimeout(() => osd.style.display = 'none', 2000);
+    // Longer timeout for reading big titles
+    window.osdTimer = setTimeout(() => osd.style.display = 'none', 4000);
 }
 
 function showStatic() { document.getElementById('static-overlay').style.opacity = 0.4; }

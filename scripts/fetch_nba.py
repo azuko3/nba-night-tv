@@ -39,11 +39,15 @@ def get_nba_videos():
     response = requests.get(base_url, params=params)
     data = response.json()
     
-    video_ids = []
+    videos = []
 
     if "items" in data and len(data["items"]) > 0:
-        video_ids = [item["id"]["videoId"] for item in data["items"]]
-        print(f"Found {len(video_ids)} videos from the last 24h.")
+        for item in data["items"]:
+            videos.append({
+                "id": item["id"]["videoId"],
+                "title": item["snippet"]["title"]
+            })
+        print(f"Found {len(videos)} videos from the last 24h.")
     else:
         print("No videos found in the last 24h (Off-season or break?). fetching latest videos instead...")
         # 3. Fallback: Just fetch latest 10 videos without time limit
@@ -53,9 +57,13 @@ def get_nba_videos():
         response = requests.get(base_url, params=params)
         data = response.json()
         if "items" in data:
-            video_ids = [item["id"]["videoId"] for item in data["items"]]
+            for item in data["items"]:
+                videos.append({
+                    "id": item["id"]["videoId"],
+                    "title": item["snippet"]["title"]
+                })
 
-    return video_ids
+    return videos
 
 def main():
     try:
