@@ -43,6 +43,12 @@ const CHANNELS = {
     }
 };
 
+// Fallback Playlist (Offline Mode)
+const FALLBACK_PLAYLIST = {
+    1: ['_nxTNmM9lfY', 'Ia-FcV1AREo'], // Static NBA clips
+    2: ['dQw4w9WgXcQ']
+};
+
 // --- INITIALIZATION ---
 async function loadPlaylists() {
     try {
@@ -51,12 +57,21 @@ async function loadPlaylists() {
             const data = await res.json();
             if (data["1"] && data["1"].length) playlistData[1] = data["1"];
             if (data["2"] && data["2"].length) playlistData[2] = data["2"];
+        } else {
+            throw new Error("Playlist fetch failed");
         }
-    } catch (e) { console.warn("Fetch failed, using defaults"); }
+    } catch (e) {
+        console.warn("Fetch failed, using FALLBACK", e);
+        playlistData = { ...FALLBACK_PLAYLIST };
+        showOSD("OFFLINE MODE");
+    }
 }
 
 // Global callback for YouTube API
 window.onYouTubeIframeAPIReady = function () {
+    // Apply debug class if needed
+    if (isDebug) document.body.classList.add('debug-mode');
+
     loadPlaylists().then(() => {
         initChannel(1);
         initChannel(2);
@@ -112,18 +127,29 @@ function createPlayerInstance(channelId, slot, vidIdx) {
                 }
 
                 e.target.playVideo();
-
-                // FIX: Pause background players so they don't run out!
-                // Only the active slot of the active channel should run immediately.
-                // Background players (Slot B or inactive channels) should buffer then pause.
-                if (!isInitiallyActive) {
-                    setTimeout(() => {
-                        e.target.pauseVideo();
-                    }, 1500); // Allow 1.5s buffering then FREEZE
-                }
             },
             'onStateChange': (e) => {
-                // Poller handles transitions
+                // Event-Based Buffering Logic
+                // If video starts PLAYING (1) and it is NOT the active visual slot, PAUSE it.
+                // This ensures background videos buffer just enough and then stop.
+                if (e.data === YT.PlayerState.PLAYING) {
+                    let currentActiveSlot = channelState[channelId].activeSlot;
+                    let isThisSlotActive = (slot === currentActiveSlot && channelId === currentChannel);
+
+                    // Specific check: If I am Channel 1 Slot A (Initial), I should play.
+                    // Otherwise, only play if I am the active swapped-in slot.
+                    let isInitialStart = (!isTVOn && isInitiallyActive);
+
+                    if (!isThisSlotActive && !isInitialStart) {
+                        // Background Player -> Pause
+                        // Wait tiny bit to ensure buffer fill?
+                        // No, YouTube PLAYING state implies buffer is sufficient.
+                        if (isDebug) console.log(`[DEBUG] Pausing background player: Ch${channelId}-${slot}`);
+                        e.target.pauseVideo();
+                    } else {
+                        if (isDebug) console.log(`[DEBUG] Player allowed to play: Ch${channelId}-${slot}`);
+                    }
+                }
             }
         }
     });
@@ -325,14 +351,28 @@ function showStatic() { document.getElementById('static-overlay').style.opacity 
 function hideStatic() { document.getElementById('static-overlay').style.opacity = 0; }
 
 // --- INPUT HANDLING ---
-document.addEventListener('keydown', (e) => {
+// --- INPUT HANDLING ---
+// Use window level and capturing phase to try and catch events before iframe steals them completely
+// Note: If focus is INSIDE iframe, standard JS listeners often fail.
+// User might need to click the "Bezel" to regain focus.
+window.addEventListener('keydown', (e) => {
+    if (isDebug) console.log("[DEBUG] Key:", e.code);
+
     if (e.code === 'Space' || e.code === 'Enter') togglePower();
+
     if (!isTVOn) return;
-    if (e.code === 'ArrowUp') switchChannel(1);
-    if (e.code === 'ArrowDown') switchChannel(-1);
+
+    if (e.code === 'ArrowUp') {
+        e.preventDefault(); // Stop scrolling
+        switchChannel(1);
+    }
+    if (e.code === 'ArrowDown') {
+        e.preventDefault();
+        switchChannel(-1);
+    }
     if (e.code === 'ArrowRight') adjustVolume(10);
     if (e.code === 'ArrowLeft') adjustVolume(-10);
-});
+}, true); // Use Capture phase
 
 // Touch
 let touchStartY = 0;
