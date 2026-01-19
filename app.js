@@ -3,6 +3,10 @@ let isTVOn = false;
 let currentChannel = 1;
 let volume = 100;
 
+// Debug Flag
+const urlParams = new URLSearchParams(window.location.search);
+const isDebug = urlParams.get('debug') === '1';
+
 // Channel Data
 let playlistData = {
     1: ['_nxTNmM9lfY'],
@@ -23,10 +27,20 @@ let channelState = {
 
 let pollInterval = null;
 
-// Channel Data & Config
-let channelConfig = {
-    1: { trimEnd: 11 }, // Cut 11 seconds from end (for NBA info cards)
-    2: { trimEnd: 0 }
+// Channel Configuration (Centralized)
+const CHANNELS = {
+    1: {
+        name: "NBA",
+        type: "MAIN",
+        trimEnd: 11, // Cut 11 seconds for info cards
+        color: "#0050ff"
+    },
+    2: {
+        name: "COMEDY",
+        type: "SATELLITE",
+        trimEnd: 0,
+        color: "#ff00ff"
+    }
 };
 
 // --- INITIALIZATION ---
@@ -72,11 +86,14 @@ function createPlayerInstance(channelId, slot, vidIdx) {
     let safeIndex = vidIdx % vIds.length;
     let videoId = vIds[safeIndex];
 
+    // Check for debug flags (Use global isDebug)
+    const showControls = isDebug ? 1 : 0;
+
     players[channelId][slot] = new YT.Player(divId, {
         videoId: videoId,
         playerVars: {
             'autoplay': 1,
-            'controls': 0,
+            'controls': showControls,
             'disablekb': 1,
             'fs': 0,
             'modestbranding': 1,
@@ -129,15 +146,24 @@ function startPoller() {
 
             if (duration > 0) {
                 // Calculate Trigger Points
-                let trim = (channelConfig[currentChannel] && channelConfig[currentChannel].trimEnd) || 0;
+                // Use Generic Config
+                let config = CHANNELS[currentChannel];
+                let trim = (config && config.trimEnd) || 0;
+
                 // Minimum safety buffer of 0.2s if trim is 0
                 if (trim === 0) trim = 0.2;
 
                 let swapPoint = duration - trim;
                 let preStartPoint = swapPoint - 2; // Start next video 2s before swap
 
+                // DEBUG LOGGING
+                if (isDebug && Math.floor(now) % 5 === 0) {
+                    console.log(`[DEBUG] Time: ${now.toFixed(1)} / ${duration.toFixed(1)} | Swap: ${swapPoint.toFixed(1)} | Pre: ${preStartPoint.toFixed(1)}`);
+                }
+
                 // 1. Trigger "Next" Start
                 if (now >= preStartPoint && !chState.nextPrepared) {
+                    if (isDebug) console.log(`[DEBUG] >>> PRE-START TRIGGERED at ${now.toFixed(1)}`);
                     // Prepare Next Slot
                     let nextSlot = currentSlot === 'A' ? 'B' : 'A';
                     let nextPlayer = players[currentChannel][nextSlot];
@@ -270,7 +296,9 @@ function switchChannel(direction) {
             p.unMute(); p.setVolume(volume); p.playVideo();
 
             hideStatic();
-            let name = currentChannel === 1 ? "NBA" : "COMEDY";
+
+            // Generic Name Lookup
+            let name = (CHANNELS[currentChannel] && CHANNELS[currentChannel].name) || "UNK";
             showOSD(`CH 0${currentChannel} ${name}`);
         }, 300);
     }
