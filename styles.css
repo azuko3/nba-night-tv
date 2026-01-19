@@ -150,6 +150,62 @@ body.debug-mode .video-player {
     animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* 3. Up Next OSD (Top Left) */
+#osd-up-next {
+    position: absolute;
+    top: 40px;
+    /* Moved from bottom */
+    left: 40px;
+    /* Moved from right */
+
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    /* Align Left */
+    text-align: left;
+    /* Align Left */
+
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.9) 0%, rgba(20, 20, 20, 0.85) 100%);
+    border-left: 4px solid #ffcc00;
+    /* Yellow Accent on Left */
+    padding: 12px 25px;
+    border-radius: 0 6px 6px 0;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.6);
+    z-index: 150;
+
+    max-width: 350px;
+
+    animation: slideInLeft 0.5s ease-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+#osd-up-next .up-next-label {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #ffcc00;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+#osd-up-next .up-next-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.2;
+}
+
 @keyframes slideUpFade {
     0% {
         opacity: 0;

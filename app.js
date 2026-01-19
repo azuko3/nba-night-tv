@@ -181,10 +181,23 @@ function startPoller() {
 
                 let swapPoint = duration - trim;
                 let preStartPoint = swapPoint - 2; // Start next video 2s before swap
+                let notifyTime = swapPoint - 15;   // Notify user 15s before swap
 
                 // DEBUG LOGGING
                 if (isDebug && Math.floor(now) % 5 === 0) {
                     console.log(`[DEBUG] Time: ${now.toFixed(1)} / ${duration.toFixed(1)} | Swap: ${swapPoint.toFixed(1)} | Pre: ${preStartPoint.toFixed(1)}`);
+                }
+
+                // 0. Trigger "Up Next" Notification
+                if (now >= notifyTime && now < swapPoint && !chState.upNextShown) {
+                    if (isDebug) console.log(`[DEBUG] >>> UP NEXT NOTIFICATION at ${now.toFixed(1)}`);
+
+                    let nextIdx = (chState.videoIndex + 1) % playlistData[currentChannel].length;
+                    let nextItem = playlistData[currentChannel][nextIdx];
+                    let nextTitle = (typeof nextItem === 'string') ? "Next Program" : nextItem.title;
+
+                    showUpNext(nextTitle);
+                    chState.upNextShown = true;
                 }
 
                 // 1. Trigger "Next" Start
@@ -238,6 +251,8 @@ function performSwap(channelId) {
     chState.activeSlot = newSlot;
     chState.videoIndex = (chState.videoIndex + 1) % playlistData[channelId].length;
     chState.nextPrepared = false;
+    chState.upNextShown = false;
+    hideUpNext();
 
     // 4. Recycle Old Player (Load Next+1)
     let nextNextIndex = (chState.videoIndex + 1) % playlistData[channelId].length;
@@ -405,6 +420,25 @@ function showOSD(text) {
     if (window.osdTimer) clearTimeout(window.osdTimer);
     // Longer timeout for reading big titles
     window.osdTimer = setTimeout(() => osd.style.display = 'none', 4000);
+}
+
+function showUpNext(title) {
+    let osd = document.getElementById('osd-up-next');
+
+    // Clean title
+    let cleanTitle = title.replace(" Full Game Highlights", "").replace("Full Game Highlights", "");
+
+    osd.innerHTML = `
+        <div class="up-next-label">COMING UP</div>
+        <div class="up-next-title">${cleanTitle}</div>
+    `;
+
+    osd.style.display = 'flex';
+}
+
+function hideUpNext() {
+    let osd = document.getElementById('osd-up-next');
+    osd.style.display = 'none';
 }
 
 function showStatic() { document.getElementById('static-overlay').style.opacity = 0.4; }
