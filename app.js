@@ -138,9 +138,11 @@ function createPlayerInstance(channelId, slot, vidIdx) {
 
                     // Specific check: If I am Channel 1 Slot A (Initial), I should play.
                     // Otherwise, only play if I am the active swapped-in slot.
+                    // Also allow if nextPrepared is True (Pre-start phase)
                     let isInitialStart = (!isTVOn && isInitiallyActive);
+                    let isPreStart = channelState[channelId].nextPrepared;
 
-                    if (!isThisSlotActive && !isInitialStart) {
+                    if (!isThisSlotActive && !isInitialStart && !isPreStart) {
                         // Background Player -> Pause
                         // Wait tiny bit to ensure buffer fill?
                         // No, YouTube PLAYING state implies buffer is sufficient.
@@ -244,6 +246,10 @@ function performSwap(channelId) {
         newPlayer.unMute();
         newPlayer.setVolume(volume);
     }
+
+    // Ensure new player is actually playing (fixes autoplay regression)
+    newPlayer.playVideo();
+
     oldPlayer.mute();
     oldDiv.classList.remove('active');
 
@@ -268,11 +274,15 @@ function performSwap(channelId) {
         setTimeout(() => oldPlayer.pauseVideo(), 1500);
     }, 1000);
 
-    // Show Title OSD
+    // Show Title OSD (Delayed by 5s)
     let currentItem = playlistData[channelId][chState.videoIndex];
     let title = (typeof currentItem === 'string') ? "" : currentItem.title;
     if (channelId === currentChannel && title) {
-        showOSD(title);
+        setTimeout(() => {
+            if (channelId === currentChannel && isTVOn) {
+                showOSD(title);
+            }
+        }, 5000); // 5 Seconds Delay
     }
 }
 
