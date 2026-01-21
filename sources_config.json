@@ -1,6 +1,6 @@
 {
     "settings": {
-        "fetch_limit_per_source": 10,
+        "fetch_limit_per_source": 50,
         "min_duration_seconds": 60
     },
     "channels": [
@@ -9,7 +9,7 @@
             "name": "GAME RECAPS (24h)",
             "description": "Highlights from the last 24 hours",
             "type": "daily_recency",
-            "time_window_days": 1,
+            "time_window_days": 3,
             "sources": [
                 {
                     "name": "House of Highlights",
