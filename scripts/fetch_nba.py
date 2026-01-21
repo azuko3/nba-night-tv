@@ -16,18 +16,16 @@ def load_config():
     with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def get_uploads_from_playlist(playlist_id, days_back, limit=10):
-    """Fetches videos from a playlist (UU...) cheaper than search (1 unit)."""
-    videos = []
+# --- METHOD A: CHEAP (Playlist) ---
+def get_uploads_from_playlist(playlist_id, days_back, limit=20):
+    """Fetches from 'UU' playlist. Cheap (1 unit). Good for clean channels."""
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
-    
-    # Calculate cutoff date (offset-aware UTC)
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
     
     params = {
         "part": "snippet,contentDetails",
         "playlistId": playlist_id,
-        "maxResults": limit, 
+        "maxResults": limit,
         "key": API_KEY
     }
 
@@ -35,75 +33,84 @@ def get_uploads_from_playlist(playlist_id, days_back, limit=10):
         response = requests.get(base_url, params=params)
         data = response.json()
         
-        if "items" not in data:
-            print(f"Warning: No items found for playlist {playlist_id}")
-            return []
-
-        # Filter by Date first to save calls on details
         candidates = []
-        for item in data["items"]:
-            # Some items might store publishedAt in snippet, some in contentDetails, standardizing check
-            published_at_str = item["contentDetails"].get("videoPublishedAt") or item["snippet"].get("publishedAt")
-            try:
-                # Handle Z by replacing with +00:00 for isoformat compatibility
-                pub_date = datetime.fromisoformat(published_at_str.replace('Z', '+00:00'))
-            except:
-                continue # Skip if date format error
-            
-            if pub_date >= cutoff_date:
-                candidates.append(item)
+        if "items" in data:
+            for item in data["items"]:
+                published_at_str = item["contentDetails"].get("videoPublishedAt") or item["snippet"].get("publishedAt")
+                try:
+                    pub_date = datetime.fromisoformat(published_at_str.replace('Z', '+00:00'))
+                    if pub_date >= cutoff_date:
+                        candidates.append(item)
+                except:
+                    continue
         
-        if not candidates:
-            return []
-
-        # Now fetch details (duration) for candidates
-        video_ids = [item["contentDetails"]["videoId"] for item in candidates]
-        return fetch_video_details(video_ids)
+        # Return only video IDs
+        return [item["contentDetails"]["videoId"] for item in candidates]
 
     except Exception as e:
         print(f"Error fetching playlist {playlist_id}: {e}")
         return []
 
-def search_keywords(keywords, days_back):
-    """Placeholder for keyword search if needed later."""
-    print(f"Searching for keywords: {keywords} (Feature not fully enabled to save quota)")
-    return [] 
+# --- METHOD B: EXPENSIVE (Search) ---
+def search_channel_videos(channel_id, query, days_back, limit=10):
+    """Specific search on a channel. Expensive (100 units). Good for messy channels."""
+    base_url = "https://www.googleapis.com/youtube/v3/search"
+    published_after = (datetime.now(timezone.utc) - timedelta(days=days_back)).isoformat()
+    
+    params = {
+        "part": "snippet",
+        "channelId": channel_id,
+        "q": query,
+        "type": "video",
+        "order": "date",  # Get newest first
+        "publishedAfter": published_after,
+        "maxResults": limit,
+        "key": API_KEY
+    }
+
+    try:
+        print(f"    Running SEARCH on channel {channel_id} for '{query}'...")
+        response = requests.get(base_url, params=params)
+        data = response.json()
+        
+        if "items" not in data:
+            return []
+            
+        return [item["id"]["videoId"] for item in data["items"]]
+
+    except Exception as e:
+        print(f"Error searching channel {channel_id}: {e}")
+        return []
 
 def fetch_video_details(video_ids):
-    """Get content details (duration) and status (embeddable)."""
+    """Get duration and embed status."""
     if not video_ids:
         return []
         
     url = "https://www.googleapis.com/youtube/v3/videos"
-    params = {
-        "part": "contentDetails,snippet,status",
-        "id": ",".join(video_ids),
-        "key": API_KEY
-    }
+    # Chunking requests if list is huge (limit is 50 per call)
+    chunks = [video_ids[i:i + 50] for i in range(0, len(video_ids), 50)]
+    all_items = []
     
-    res = requests.get(url, params=params)
-    data = res.json()
-    items = []
-    
-    if "items" in data:
-        for item in data["items"]:
-            # Normalize structure for frontend
-            items.append({
-                "id": item["id"],
-                "title": item["snippet"]["title"],
-                "snippet": item["snippet"],           # Keep raw snippet for future use
-                "contentDetails": item["contentDetails"], # Keep raw details for duration check
-                "status": item["status"]
-            })
-    return items
+    for chunk in chunks:
+        params = {
+            "part": "contentDetails,snippet,status",
+            "id": ",".join(chunk),
+            "key": API_KEY
+        }
+        res = requests.get(url, params=params)
+        data = res.json()
+        all_items.extend(data.get("items", []))
+        
+    return all_items
 
 def filter_videos(videos_data, settings, source_rules):
-    """Applies global settings and channel-specific rules."""
+    """Common filtering logic."""
     valid_videos = []
     
     for video in videos_data:
         vid_id = video["id"]
-        title = video["title"]
+        title = video["snippet"]["title"]
         duration_iso = video["contentDetails"]["duration"] 
         is_embeddable = video["status"]["embeddable"]
         
@@ -111,7 +118,7 @@ def filter_videos(videos_data, settings, source_rules):
         if not is_embeddable:
             continue
 
-        # 2. Duration Check (Filter Shorts)
+        # 2. Duration Check
         try:
             duration = isodate.parse_duration(duration_iso)
             if settings.get("ignore_shorts", True) and duration.total_seconds() < 60:
@@ -119,21 +126,19 @@ def filter_videos(videos_data, settings, source_rules):
         except:
             pass 
 
-        # 3. Channel Specific: Exclude Keywords
+        # 3. Exclude Keywords
         exclude_words = source_rules.get("exclude_keywords", [])
         if any(word.lower() in title.lower() for word in exclude_words):
-            print(f"Skipped (Exclude Keyword): {title}")
+            print(f"    Skipped (Exclude): {title}")
             continue
 
-        # 4. Channel Specific: Must Contain
+        # 4. Must Contain
         must_words = source_rules.get("must_contain", [])
         if must_words:
-            # Matches if AT LEAST ONE word is present
             if not any(word.lower() in title.lower() for word in must_words):
-                print(f"Skipped (Missing Context): {title}")
+                print(f"    Skipped (Missing '{must_words}'): {title}")
                 continue
 
-        # Append minimal object for playlist.json
         # Append object for playlist.json
         # Include source-specific override if present
         video_obj = {
@@ -150,69 +155,68 @@ def filter_videos(videos_data, settings, source_rules):
     return valid_videos
 
 def main():
-    print("Starting Content Fetcher...")
-    try:
-        config = load_config()
-    except Exception as e:
-        print(f"Failed to load config: {e}")
-        return
-
+    print("Starting Content Fetcher (Hybrid Mode)...")
+    config = load_config()
     final_playlist = {}
     
-    # Iterate over channels defined in config
     for ch_config in config["channels"]:
         print(f"\nProcessing Channel {ch_config['id']}: {ch_config['name']}")
         channel_videos = []
         
-        # Iterate over sources within that channel
-        sources = ch_config.get("sources", [])
-        
-        # Handle Keyword Search Channels (like Deni Avdija)
+        # Special case: Deni Avdija (Global Keyword Search)
         if ch_config.get("type") == "keyword_search":
-             # Logic placeholder - currently skips to save quota unless implemented
-             print("Skipping keyword search channel for now.")
-             continue
+            # For now, we skip global search to save quota unless specifically requested
+            # You can implement global search using search_channel_videos without channelId
+            print("  Skipping global keyword search.")
+            continue
 
-        for source in sources:
-            print(f"  > Source: {source['name']}")
-            
+        for source in ch_config.get("sources", []):
+            source_name = source["name"]
+            method = source.get("method", "playlist")
             days = source.get("time_window_days", ch_config.get("time_window_days", 7))
             
-            raw_videos = []
+            raw_video_ids = []
             
-            if "playlist_id" in source:
-                raw_videos = get_uploads_from_playlist(source["playlist_id"], days)
+            # --- DECISION: SEARCH vs PLAYLIST ---
+            if method == "search" and "channel_id" in source:
+                query = source.get("search_query", "NBA")
+                print(f"  > Source: {source_name} [Method: SEARCH]")
+                raw_video_ids = search_channel_videos(source["channel_id"], query, days)
+                
+            elif method == "playlist" and "playlist_id" in source:
+                print(f"  > Source: {source_name} [Method: PLAYLIST]")
+                raw_video_ids = get_uploads_from_playlist(source["playlist_id"], days)
             
-            # Filter and add
-            filtered_videos = filter_videos(raw_videos, config["settings"], source)
-            print(f"    Added {len(filtered_videos)} videos.")
-            channel_videos.extend(filtered_videos)
+            else:
+                print(f"  > Source: {source_name} [Skipped: Missing ID or Method]")
+                continue
+
+            # Fetch details for filtering
+            videos_with_details = fetch_video_details(raw_video_ids)
+            
+            # Filter
+            filtered_ids = filter_videos(videos_with_details, config["settings"], source)
+            print(f"    -> Kept {len(filtered_ids)} videos.")
+            channel_videos.extend(filtered_ids)
         
-        # Post-Processing
+        # Shuffle if needed
         if ch_config.get("type") == "shuffle_mix":
             import random
             random.shuffle(channel_videos)
-        
-        # Ensure unique IDs
-        seen = set()
-        unique_list = []
-        for vid in channel_videos:
-            if vid["id"] not in seen:
-                seen.add(vid["id"])
-                unique_list.append(vid)
-        channel_videos = unique_list
+        else:
+             # De-duplicate preserving order
+            seen = set()
+            unique_list = []
+            for vid in channel_videos:
+                if vid["id"] not in seen:
+                    seen.add(vid["id"])
+                    unique_list.append(vid)
+            channel_videos = unique_list
 
-        # Add to final JSON
-        # IMPORTANT: Maintain compatibility with frontend
-        # Frontend currently expects "1" and "2".
-        # We are generating "0", "1", "2", ... "6".
-        # We will map them 1:1, but ensure 0 is also present.
         final_playlist[ch_config["id"]] = channel_videos
 
-    # Add timestamp
-    final_playlist["updated_at"] = datetime.utcnow().isoformat()
-
     # Save
+    final_playlist["updated_at"] = datetime.utcnow().isoformat()
     with open(OUTPUT_FILE, "w") as f:
         json.dump(final_playlist, f, indent=2)
     

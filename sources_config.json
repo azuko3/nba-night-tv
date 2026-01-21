@@ -1,31 +1,43 @@
 {
     "settings": {
-        "fetch_limit_per_source": 50,
+        "fetch_limit_per_source": 10,
         "min_duration_seconds": 60
     },
     "channels": [
         {
             "id": "0",
             "name": "GAME RECAPS (24h)",
-            "description": "Highlights from the last 24 hours",
+            "description": "Highlights via Search (High Accuracy)",
             "type": "daily_recency",
-            "time_window_days": 3,
+            "time_window_days": 1,
             "sources": [
                 {
                     "name": "House of Highlights",
-                    "playlist_id": "UUqQo7ewe87aYAe7ub5UqXMw"
+                    "channel_id": "UCqQo7ewe87aYAe7ub5UqXMw",
+                    "method": "search",
+                    "search_query": "Full Game Highlights | Recap",
+                    "must_contain": [
+                        "Full Game Highlights"
+                    ]
+                },
+                {
+                    "name": "Gametime Highlights",
+                    "channel_id": "UC0LrZO9wORIqn_aRJtKdgfA",
+                    "method": "search",
+                    "search_query": "Full Game Highlights"
                 }
             ]
         },
         {
             "id": "1",
             "name": "TACTICAL ANALYSIS",
-            "description": "Deep dives and X&Os",
+            "description": "Deep dives (Low Volume - Playlist Method)",
             "type": "mixed_recency",
             "sources": [
                 {
                     "name": "Thinking Basketball",
                     "playlist_id": "UU3HPbvB6f58X_7SMIp6OPYw",
+                    "method": "playlist",
                     "time_window_days": 30,
                     "exclude_keywords": [
                         "Patron",
@@ -37,22 +49,25 @@
                 {
                     "name": "Hoops Reference",
                     "playlist_id": "UUrIfvcoVTi0r6OMX8IHd7wA",
+                    "method": "playlist",
                     "time_window_days": 14
                 },
                 {
                     "name": "Heat Check",
                     "playlist_id": "UUmwxBk7Af9OnnloGZzp6JnQ",
+                    "method": "playlist",
                     "time_window_days": 7
                 },
                 {
                     "name": "Sky Hoops",
                     "playlist_id": "UU3GrJP2cZ09EVBcBATjiFwA",
-                    "time_window_days": 3650,
-                    "notes": "Classic content, fetching up to 10 years back"
+                    "method": "playlist",
+                    "time_window_days": 3650
                 },
                 {
                     "name": "Sporting Logically (Analysis)",
                     "playlist_id": "UUR8s3egas481EMmOxr5fBmg",
+                    "method": "playlist",
                     "time_window_days": 14,
                     "must_contain": [
                         "Analysis",
@@ -67,32 +82,35 @@
         {
             "id": "2",
             "name": "STORIES & HISTORY",
-            "description": "Documentaries and career retrospectives",
+            "description": "Documentaries (Low Volume - Playlist Method)",
             "type": "shuffle_mix",
             "sources": [
                 {
                     "name": "JxmyHighroller",
                     "playlist_id": "UU3L9XPe0_FGfRG-CMGtBvFg",
+                    "method": "playlist",
                     "time_window_days": 365
                 },
                 {
                     "name": "Mike Korzemba",
                     "playlist_id": "UUp3dgMf1OUP2XqOpyOY2bzQ",
+                    "method": "playlist",
                     "time_window_days": 365
                 },
                 {
                     "name": "Clayton Crowley",
                     "playlist_id": "UUPhN8QINb_UXV5DrHjCTqyg",
+                    "method": "playlist",
                     "time_window_days": 365
                 },
                 {
                     "name": "Jonny Arnett",
                     "playlist_id": "UUSgbEY-tEu0S_ill_fEL82w",
+                    "method": "playlist",
                     "time_window_days": 90,
                     "exclude_keywords": [
                         "Member",
-                        "Q&A",
-                        "Update"
+                        "Q&A"
                     ]
                 }
             ]
@@ -100,27 +118,23 @@
         {
             "id": "3",
             "name": "PANELS & OPINIONS",
-            "description": "Debates and Talking Heads",
+            "description": "High Volume - Requires Search for ESPN",
             "type": "standard_recency",
             "sources": [
                 {
                     "name": "ESPN (First Take/NBA Today)",
-                    "playlist_id": "UUiWLfSweyRNmLpgEHekhoAg",
-                    "time_window_days": 2,
+                    "channel_id": "UCiWLfSweyRNmLpgEHekhoAg",
+                    "method": "search",
+                    "search_query": "NBA Today | First Take",
+                    "time_window_days": 1,
                     "must_contain": [
-                        "NBA",
-                        "LeBron",
-                        "Curry",
-                        "Lakers",
-                        "Celtics",
-                        "Basketball",
-                        "Durant",
-                        "Wemby"
+                        "NBA"
                     ]
                 },
                 {
                     "name": "The Ringer",
                     "playlist_id": "UUP032AGFh2KzzIUGylB9BjA",
+                    "method": "playlist",
                     "time_window_days": 3,
                     "must_contain": [
                         "NBA",
@@ -130,21 +144,25 @@
                 {
                     "name": "Little Rusty Buckets",
                     "playlist_id": "UUTzRBaPR-4WvRzCwOKnbIEQ",
+                    "method": "playlist",
                     "time_window_days": 10
                 },
                 {
                     "name": "Synthetic Sports",
                     "playlist_id": "UUiDPnh65zGGFwVJ0jRMB7Ug",
+                    "method": "playlist",
                     "time_window_days": 14
                 },
                 {
                     "name": "A.M. Hoops",
                     "playlist_id": "UUtG-elouHQdUnpN9cVLdltg",
+                    "method": "playlist",
                     "time_window_days": 14
                 },
                 {
                     "name": "ThreeCone",
                     "playlist_id": "UUnfSDcbfVN_8D_0PZXQb2cw",
+                    "method": "playlist",
                     "time_window_days": 30
                 }
             ]
@@ -152,29 +170,26 @@
         {
             "id": "4",
             "name": "REACTIONS & NEWS",
-            "description": "Trades, Injuries and Rapid Reactions",
+            "description": "Mixed Methods",
             "type": "standard_recency",
             "sources": [
                 {
                     "name": "Bleacher Report",
-                    "playlist_id": "UU9-OpMMVoNP5o10_Iyq7Ndw",
-                    "time_window_days": 5,
-                    "must_contain": [
-                        "NBA",
-                        "Trade",
-                        "Injury",
-                        "Breaking",
-                        "Report"
-                    ]
+                    "channel_id": "UC9-OpMMVoNP5o10_Iyq7Ndw",
+                    "method": "search",
+                    "search_query": "NBA Trade | NBA News",
+                    "time_window_days": 3
                 },
                 {
                     "name": "KOT4Q",
                     "playlist_id": "UU8xZt-P1j-G7ckm0LM2p6eQ",
+                    "method": "playlist",
                     "time_window_days": 7
                 },
                 {
                     "name": "Sporting Logically (News)",
                     "playlist_id": "UUR8s3egas481EMmOxr5fBmg",
+                    "method": "playlist",
                     "time_window_days": 5,
                     "exclude_keywords": [
                         "History",
@@ -184,6 +199,7 @@
                 {
                     "name": "Synthetic Sports (News)",
                     "playlist_id": "UUiDPnh65zGGFwVJ0jRMB7Ug",
+                    "method": "playlist",
                     "time_window_days": 5
                 }
             ]
@@ -191,7 +207,7 @@
         {
             "id": "5",
             "name": "DENI AVDIJA WATCH",
-            "description": "All content related to Deni",
+            "description": "Keyword Search Channel",
             "type": "keyword_search",
             "keywords": [
                 "Deni Avdija",
@@ -209,11 +225,13 @@
                 {
                     "name": "Nonstop",
                     "playlist_id": "UUJVU1UGN-YtwnAartLDdpIw",
+                    "method": "playlist",
                     "time_window_days": 180
                 },
                 {
                     "name": "Dom2k",
                     "playlist_id": "UU3-gn89LFClSLU6scv9naOQ",
+                    "method": "playlist",
                     "time_window_days": 60,
                     "exclude_keywords": [
                         "Member",
