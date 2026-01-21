@@ -1,0 +1,227 @@
+{
+    "settings": {
+        "fetch_limit_per_source": 10,
+        "min_duration_seconds": 60
+    },
+    "channels": [
+        {
+            "id": "0",
+            "name": "GAME RECAPS (24h)",
+            "description": "Highlights from the last 24 hours",
+            "type": "daily_recency",
+            "time_window_days": 1,
+            "sources": [
+                {
+                    "name": "House of Highlights",
+                    "playlist_id": "UUqQo7ewe87aYAe7ub5UqXMw"
+                }
+            ]
+        },
+        {
+            "id": "1",
+            "name": "TACTICAL ANALYSIS",
+            "description": "Deep dives and X&Os",
+            "type": "mixed_recency",
+            "sources": [
+                {
+                    "name": "Thinking Basketball",
+                    "playlist_id": "UU3HPbvB6f58X_7SMIp6OPYw",
+                    "time_window_days": 30,
+                    "exclude_keywords": [
+                        "Patron",
+                        "Members",
+                        "Announcement",
+                        "Q&A"
+                    ]
+                },
+                {
+                    "name": "Hoops Reference",
+                    "playlist_id": "UUrIfvcoVTi0r6OMX8IHd7wA",
+                    "time_window_days": 14
+                },
+                {
+                    "name": "Heat Check",
+                    "playlist_id": "UUmwxBk7Af9OnnloGZzp6JnQ",
+                    "time_window_days": 7
+                },
+                {
+                    "name": "Sky Hoops",
+                    "playlist_id": "UU3GrJP2cZ09EVBcBATjiFwA",
+                    "time_window_days": 3650,
+                    "notes": "Classic content, fetching up to 10 years back"
+                },
+                {
+                    "name": "Sporting Logically (Analysis)",
+                    "playlist_id": "UUR8s3egas481EMmOxr5fBmg",
+                    "time_window_days": 14,
+                    "must_contain": [
+                        "Analysis",
+                        "Breakdown",
+                        "Why",
+                        "How",
+                        "History"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "2",
+            "name": "STORIES & HISTORY",
+            "description": "Documentaries and career retrospectives",
+            "type": "shuffle_mix",
+            "sources": [
+                {
+                    "name": "JxmyHighroller",
+                    "playlist_id": "UU3L9XPe0_FGfRG-CMGtBvFg",
+                    "time_window_days": 365
+                },
+                {
+                    "name": "Mike Korzemba",
+                    "playlist_id": "UUp3dgMf1OUP2XqOpyOY2bzQ",
+                    "time_window_days": 365
+                },
+                {
+                    "name": "Clayton Crowley",
+                    "playlist_id": "UUPhN8QINb_UXV5DrHjCTqyg",
+                    "time_window_days": 365
+                },
+                {
+                    "name": "Jonny Arnett",
+                    "playlist_id": "UUSgbEY-tEu0S_ill_fEL82w",
+                    "time_window_days": 90,
+                    "exclude_keywords": [
+                        "Member",
+                        "Q&A",
+                        "Update"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "3",
+            "name": "PANELS & OPINIONS",
+            "description": "Debates and Talking Heads",
+            "type": "standard_recency",
+            "sources": [
+                {
+                    "name": "ESPN (First Take/NBA Today)",
+                    "playlist_id": "UUiWLfSweyRNmLpgEHekhoAg",
+                    "time_window_days": 2,
+                    "must_contain": [
+                        "NBA",
+                        "LeBron",
+                        "Curry",
+                        "Lakers",
+                        "Celtics",
+                        "Basketball",
+                        "Durant",
+                        "Wemby"
+                    ]
+                },
+                {
+                    "name": "The Ringer",
+                    "playlist_id": "UUP032AGFh2KzzIUGylB9BjA",
+                    "time_window_days": 3,
+                    "must_contain": [
+                        "NBA",
+                        "Basketball"
+                    ]
+                },
+                {
+                    "name": "Little Rusty Buckets",
+                    "playlist_id": "UUTzRBaPR-4WvRzCwOKnbIEQ",
+                    "time_window_days": 10
+                },
+                {
+                    "name": "Synthetic Sports",
+                    "playlist_id": "UUiDPnh65zGGFwVJ0jRMB7Ug",
+                    "time_window_days": 14
+                },
+                {
+                    "name": "A.M. Hoops",
+                    "playlist_id": "UUtG-elouHQdUnpN9cVLdltg",
+                    "time_window_days": 14
+                },
+                {
+                    "name": "ThreeCone",
+                    "playlist_id": "UUnfSDcbfVN_8D_0PZXQb2cw",
+                    "time_window_days": 30
+                }
+            ]
+        },
+        {
+            "id": "4",
+            "name": "REACTIONS & NEWS",
+            "description": "Trades, Injuries and Rapid Reactions",
+            "type": "standard_recency",
+            "sources": [
+                {
+                    "name": "Bleacher Report",
+                    "playlist_id": "UU9-OpMMVoNP5o10_Iyq7Ndw",
+                    "time_window_days": 5,
+                    "must_contain": [
+                        "NBA",
+                        "Trade",
+                        "Injury",
+                        "Breaking",
+                        "Report"
+                    ]
+                },
+                {
+                    "name": "KOT4Q",
+                    "playlist_id": "UU8xZt-P1j-G7ckm0LM2p6eQ",
+                    "time_window_days": 7
+                },
+                {
+                    "name": "Sporting Logically (News)",
+                    "playlist_id": "UUR8s3egas481EMmOxr5fBmg",
+                    "time_window_days": 5,
+                    "exclude_keywords": [
+                        "History",
+                        "Why"
+                    ]
+                },
+                {
+                    "name": "Synthetic Sports (News)",
+                    "playlist_id": "UUiDPnh65zGGFwVJ0jRMB7Ug",
+                    "time_window_days": 5
+                }
+            ]
+        },
+        {
+            "id": "5",
+            "name": "DENI AVDIJA WATCH",
+            "description": "All content related to Deni",
+            "type": "keyword_search",
+            "keywords": [
+                "Deni Avdija",
+                "דני אבדיה"
+            ],
+            "search_across_channels": true,
+            "time_window_days": 7
+        },
+        {
+            "id": "6",
+            "name": "CULTURE & ESSAYS",
+            "description": "Nonstop & Dom2k",
+            "type": "shuffle_mix",
+            "sources": [
+                {
+                    "name": "Nonstop",
+                    "playlist_id": "UUJVU1UGN-YtwnAartLDdpIw",
+                    "time_window_days": 180
+                },
+                {
+                    "name": "Dom2k",
+                    "playlist_id": "UU3-gn89LFClSLU6scv9naOQ",
+                    "time_window_days": 60,
+                    "exclude_keywords": [
+                        "Member",
+                        "Support",
+                        "Q&A"
+                    ]
+                }
+            ]
+        }
+    ]
+}
