@@ -56,7 +56,18 @@ async function loadPlaylists() {
         const res = await fetch('playlist.json?t=' + Date.now());
         if (res.ok) {
             const data = await res.json();
-            if (data["1"] && data["1"].length) playlistData[1] = data["1"];
+            if (data["1"] && data["1"].length) {
+                playlistData[1] = data["1"];
+                // Verify Context Parsing
+                if (isDebug) {
+                    console.log("--- CONTEXT ENGINE VERIFICATION ---");
+                    playlistData[1].forEach(item => {
+                        let t = (typeof item === 'string') ? item : item.title;
+                        parseGameTitle(t);
+                    });
+                    console.log("-----------------------------------");
+                }
+            }
             if (data["2"] && data["2"].length) playlistData[2] = data["2"];
         } else {
             throw new Error("Playlist fetch failed");
@@ -449,6 +460,62 @@ function showUpNext(title) {
 function hideUpNext() {
     let osd = document.getElementById('osd-up-next');
     osd.style.display = 'none';
+}
+
+// --- CONTEXT ENGINE (Game ID Parsing) ---
+function parseGameTitle(title) {
+    if (!title) return null;
+
+    // Regex Strategy:
+    // 1. Identify Teams: "Team A vs Team B"
+    // 2. Identify Date: "Month DD, YYYY" or ISO
+
+    // Split title by " vs "
+    // Example: "Boston Celtics vs Detroit Pistons Full Game Highlights..."
+    let vsSplit = title.split(" vs ");
+    if (vsSplit.length < 2) return null;
+
+    let team1Raw = vsSplit[0].trim();
+    let remainder = vsSplit[1];
+
+    // Find Team 2 end? usually " Full Game" or " Highlights"
+    let team2 = "UNK";
+    let team2Raw = remainder;
+
+    // Common delimiters in YouTube titles
+    const delimiters = [" Full Game", " Highlights", " |", " - "];
+    for (let d of delimiters) {
+        if (team2Raw.includes(d)) {
+            team2Raw = team2Raw.split(d)[0];
+            break;
+        }
+    }
+
+    // Map to Codes
+    let t1Code = NBA_TEAMS[team1Raw] || "UNK";
+    let t2Code = NBA_TEAMS[team2Raw] || "UNK";
+
+    // Extract Date
+    // Pattern: January 19, 2026
+    const dateRegex = /([a-zA-Z]+ \d{1,2}, \d{4})/;
+    let dateMatch = title.match(dateRegex);
+    let dateStr = "00000000";
+
+    if (dateMatch) {
+        let d = new Date(dateMatch[1]);
+        if (!isNaN(d.getTime())) {
+            let y = d.getFullYear();
+            let m = String(d.getMonth() + 1).padStart(2, '0');
+            let day = String(d.getDate()).padStart(2, '0');
+            dateStr = `${y}${m}${day}`;
+        }
+    }
+
+    // Create ID
+    let gameId = `${t1Code}-${t2Code}-${dateStr}`;
+
+    if (isDebug) console.log(`[Context] Parsed: ${title} -> ${gameId}`);
+    return { id: gameId, t1: t1Code, t2: t2Code, date: dateStr };
 }
 
 function showStatic() { document.getElementById('static-overlay').style.opacity = 0.4; }
