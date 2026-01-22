@@ -3,7 +3,7 @@ name: Update TV Schedule
 on:
   # 1. Standard Schedule (06:50 UTC = 08:50 Israel time)
   schedule:
-    - cron: '50 6 * * *'
+    - cron: '55 6 * * *'
   
   # 2. Manual Trigger (Allows running manually from the Actions tab)
   workflow_dispatch:
