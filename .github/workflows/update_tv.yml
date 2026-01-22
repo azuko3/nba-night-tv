@@ -8,11 +8,10 @@ on:
   # 2. Manual Trigger (Allows running manually from the Actions tab)
   workflow_dispatch:
   
-  # 3. Push Trigger - Runs the workflow every time code is pushed to 'main'
-  # This is key for immediate debugging!
-  push:
-    branches:
-      - main
+  # 3. Push Trigger - DISABLED to save quota
+  # push:
+  #   branches:
+  #     - main
 
 permissions:
   contents: write

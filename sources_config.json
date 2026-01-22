@@ -5,7 +5,7 @@
     },
     "channels": [
         {
-            "id": "0",
+            "id": "1",
             "name": "GAME RECAPS (24h)",
             "description": "Highlights via Search (High Accuracy)",
             "type": "daily_recency",
@@ -17,19 +17,22 @@
                     "method": "search",
                     "search_query": "Full Game Highlights | Recap",
                     "must_contain": [
-                        "Full Game Highlights"
+                        "NBA"
                     ]
                 },
                 {
                     "name": "Gametime Highlights",
                     "channel_id": "UC0LrZO9wORIqn_aRJtKdgfA",
                     "method": "search",
-                    "search_query": "Full Game Highlights"
+                    "search_query": "Full Game Highlights",
+                    "must_contain": [
+                        "NBA"
+                    ]
                 }
             ]
         },
         {
-            "id": "1",
+            "id": "2",
             "name": "TACTICAL ANALYSIS",
             "description": "Deep dives (Low Volume - Playlist Method)",
             "type": "mixed_recency",
@@ -80,7 +83,7 @@
             ]
         },
         {
-            "id": "2",
+            "id": "3",
             "name": "STORIES & HISTORY",
             "description": "Documentaries (Low Volume - Playlist Method)",
             "type": "shuffle_mix",
@@ -116,7 +119,7 @@
             ]
         },
         {
-            "id": "3",
+            "id": "4",
             "name": "PANELS & OPINIONS",
             "description": "High Volume - Requires Search for ESPN",
             "type": "standard_recency",
@@ -168,7 +171,7 @@
             ]
         },
         {
-            "id": "4",
+            "id": "5",
             "name": "REACTIONS & NEWS",
             "description": "Mixed Methods",
             "type": "standard_recency",
@@ -205,7 +208,7 @@
             ]
         },
         {
-            "id": "5",
+            "id": "6",
             "name": "DENI AVDIJA WATCH",
             "description": "Keyword Search Channel",
             "type": "keyword_search",
@@ -217,7 +220,7 @@
             "time_window_days": 7
         },
         {
-            "id": "6",
+            "id": "7",
             "name": "CULTURE & ESSAYS",
             "description": "Nonstop & Dom2k",
             "type": "shuffle_mix",

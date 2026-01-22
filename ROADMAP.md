@@ -45,11 +45,12 @@
     - [x] Update `.github/workflows/update_tv.yml`
 
 ### Phase 2: Multi-Source Content Expansion
-- [x] **Create Source Configuration System**
+- [ ] **Create Source Configuration System**
     - [x] Design `sources_config.json` schema
     - [x] Map all 18 source channels (6 themed TV channels)
     - [x] Define time windows per source (24h, 7d, 14d, 30d, all-time)
     - [x] Define filters per source (must_contain, exclude_keywords)
+    - [x] **Renumber Channels**: Shift from 0-6 to 1-7 (UX decision).
 - [ ] **Enhance Fetcher for Multi-Source**
     - [x] Loop over sources in config
     - [x] Apply keyword filtering (NBA-only for ESPN, etc.)
@@ -64,8 +65,8 @@
 
 ### Phase 3: Frontend Multi-Channel Support
 - [ ] **Expand Channel Infrastructure**
-    - [ ] Update `app.js` to support 7 channels (0-6)
-    - [ ] Update channel switcher logic (loop 0→6)
+    - [ ] Update `app.js` to support 7 channels (1-7)
+    - [ ] Update channel switcher logic (loop 1→7)
     - [ ] Load channel-specific playlists from new JSON structure
     - [ ] **Dynamic Video Trimming**: Read `trim` property from video object and override channel default.
     - [ ] Update `CHANNELS` config with themed names ("TACTICAL", "STORIES", etc.)
