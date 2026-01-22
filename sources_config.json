@@ -9,7 +9,7 @@
             "name": "GAME RECAPS (24h)",
             "description": "Highlights via Search (High Accuracy)",
             "type": "daily_recency",
-            "time_window_days": 1,
+            "time_window_days": 2,
             "sources": [
                 {
                     "name": "House of Highlights",
