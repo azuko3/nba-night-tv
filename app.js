@@ -8,46 +8,42 @@ const urlParams = new URLSearchParams(window.location.search);
 const isDebug = urlParams.get('debug') === '1';
 
 // Channel Data
-let playlistData = {
-    // Playlist can be array of strings (legacy) or objects {id, title}
-    1: [{ id: '_nxTNmM9lfY', title: 'NBA Highlights' }],
-    2: ['dQw4w9WgXcQ', 'L_jWHffIx5E']
-};
+let playlistData = {};
+// Initialize for 7 channels
+for (let i = 1; i <= 7; i++) playlistData[i] = [];
 
-// Player Architecture: 2 channels, each has 2 players (A/B) for double buffering
-// players[channelId] = { 'A': YT.Player, 'B': YT.Player }
-let players = {
-    1: { A: null, B: null },
-    2: { A: null, B: null }
-};
+// Player Architecture: 7 channels, each has 2 players (A/B)
+let players = {};
+let channelState = {};
 
-let channelState = {
-    1: { activeSlot: 'A', videoIndex: 0, nextPrepared: false }, // activeSlot: 'A' or 'B'
-    2: { activeSlot: 'A', videoIndex: 0, nextPrepared: false }
-};
+// Initialize State Objects
+for (let i = 1; i <= 7; i++) {
+    players[i] = { A: null, B: null };
+    channelState[i] = { activeSlot: 'A', videoIndex: 0, nextPrepared: false, upNextShown: false };
+}
 
 let pollInterval = null;
 
 // Channel Configuration (Centralized)
 const CHANNELS = {
-    1: {
-        name: "NBA",
-        type: "MAIN",
-        trimEnd: 11, // Cut 11 seconds for info cards
-        color: "#0050ff"
-    },
-    2: {
-        name: "COMEDY",
-        type: "SATELLITE",
-        trimEnd: 0,
-        color: "#ff00ff"
-    }
+    1: { name: "RECAPS", type: "MAIN", color: "#0050ff", trimEnd: 11 },
+    2: { name: "ANALYTICS", type: "SATELLITE", color: "#9d00ff", trimEnd: 0 },
+    3: { name: "RETRO", type: "SATELLITE", color: "#ffd700", trimEnd: 0 },
+    4: { name: "MIC'D", type: "SATELLITE", color: "#00ff00", trimEnd: 0 },
+    5: { name: "BUZZ", type: "SATELLITE", color: "#ff8c00", trimEnd: 0 },
+    6: { name: "DENI", type: "SATELLITE", color: "#e0efff", trimEnd: 0 },
+    7: { name: "STORY+", type: "SATELLITE", color: "#00ffff", trimEnd: 0 }
 };
 
 // Fallback Playlist (Offline Mode)
 const FALLBACK_PLAYLIST = {
-    1: [{ id: '_nxTNmM9lfY', title: 'Fallback NBA' }, { id: 'Ia-FcV1AREo', title: 'Fallback NBA 2' }],
-    2: ['dQw4w9WgXcQ']
+    1: [{ id: '_nxTNmM9lfY', title: 'Fallback NBA' }],
+    2: ['dQw4w9WgXcQ'],
+    3: ['dQw4w9WgXcQ'],
+    4: ['dQw4w9WgXcQ'],
+    5: ['dQw4w9WgXcQ'],
+    6: ['dQw4w9WgXcQ'],
+    7: ['dQw4w9WgXcQ']
 };
 
 // --- INITIALIZATION ---
@@ -56,19 +52,26 @@ async function loadPlaylists() {
         const res = await fetch('playlist.json?t=' + Date.now());
         if (res.ok) {
             const data = await res.json();
-            if (data["1"] && data["1"].length) {
-                playlistData[1] = data["1"];
-                // Verify Context Parsing
-                if (isDebug) {
-                    console.log("--- CONTEXT ENGINE VERIFICATION ---");
-                    playlistData[1].forEach(item => {
-                        let t = (typeof item === 'string') ? item : item.title;
-                        parseGameTitle(t);
-                    });
-                    console.log("-----------------------------------");
+
+            // Loop 1-7 to load data
+            for (let i = 1; i <= 7; i++) {
+                let key = String(i);
+                if (data[key] && data[key].length) {
+                    playlistData[i] = data[key];
+                    // Client-Side Shuffle for freshness
+                    shuffleArray(playlistData[i]);
                 }
             }
-            if (data["2"] && data["2"].length) playlistData[2] = data["2"];
+
+            // Verify Context Parsing (Debug only on Ch 1)
+            if (isDebug && playlistData[1].length) {
+                console.log("--- CONTEXT ENGINE VERIFICATION ---");
+                playlistData[1].forEach(item => {
+                    let t = (typeof item === 'string') ? item : item.title;
+                    parseGameTitle(t);
+                });
+                console.log("-----------------------------------");
+            }
         } else {
             throw new Error("Playlist fetch failed");
         }
@@ -85,13 +88,19 @@ window.onYouTubeIframeAPIReady = function () {
     if (isDebug) document.body.classList.add('debug-mode');
 
     loadPlaylists().then(() => {
-        initChannel(1);
-        initChannel(2);
+        // Init all 7 channels
+        for (let i = 1; i <= 7; i++) {
+            initChannel(i);
+        }
         startPoller();
     });
 }
 
 function initChannel(id) {
+    if (!playlistData[id] || playlistData[id].length === 0) {
+        console.warn(`Channel ${id} has no data, skipping init.`);
+        return;
+    }
     // Create A and B players
     createPlayerInstance(id, 'A', 0); // Load 1st video
     createPlayerInstance(id, 'B', 1); // Preload 2nd video
@@ -107,6 +116,9 @@ function createPlayerInstance(channelId, slot, vidIdx) {
     let isInitiallyActive = (channelId === 1 && slot === 'A');
     div.className = `video-player ${isInitiallyActive ? 'active' : ''}`;
     container.appendChild(div);
+
+    // Safety check for empty data
+    if (!playlistData[channelId] || playlistData[channelId].length === 0) return;
 
     // Handle both String (Legacy) and Object (New) formats
     let item = playlistData[channelId][vidIdx % playlistData[channelId].length];
@@ -188,6 +200,13 @@ function startPoller() {
                 // Use Generic Config
                 let config = CHANNELS[currentChannel];
                 let trim = (config && config.trimEnd) || 0;
+
+                // Dynamic Trim (Per-Video Override)
+                let currentItem = playlistData[currentChannel][chState.videoIndex];
+                if (currentItem && typeof currentItem === 'object' && typeof currentItem.trim === 'number') {
+                    trim = currentItem.trim;
+                    if (isDebug) console.log(`[DEBUG] Using dynamic trim: ${trim}s for ${currentItem.id}`);
+                }
 
                 // Minimum safety buffer of 0.2s if trim is 0
                 if (trim === 0) trim = 0.2;
@@ -342,16 +361,21 @@ function switchChannel(direction) {
 
     let oldCh = currentChannel;
 
-    // Generic Looping Logic
-    // Assuming channels are 1 and 2. 
-    // 1 -> 2 -> 1
-    if (direction > 0) {
-        // Next
-        currentChannel = (currentChannel === 1) ? 2 : 1;
-    } else {
-        // Prev
-        currentChannel = (currentChannel === 1) ? 2 : 1;
-    }
+    // Skip Empty Channels Logic
+    let nextCh = currentChannel;
+    let attempts = 0;
+
+    do {
+        if (direction > 0) {
+            nextCh = (nextCh >= 7) ? 1 : nextCh + 1;
+        } else {
+            nextCh = (nextCh <= 1) ? 7 : nextCh - 1;
+        }
+        attempts++;
+    } while ((!playlistData[nextCh] || playlistData[nextCh].length === 0) && attempts < 8);
+
+    // If we found a valid channel (or looped back to start if all empty)
+    currentChannel = nextCh;
 
     // Only execute switch if channel actually changed (always true for 2 channels, but safe generic)
     if (oldCh !== currentChannel) {
@@ -520,6 +544,14 @@ function parseGameTitle(title) {
 
 function showStatic() { document.getElementById('static-overlay').style.opacity = 0.4; }
 function hideStatic() { document.getElementById('static-overlay').style.opacity = 0; }
+
+// --- UTILS ---
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
 
 // --- INPUT HANDLING ---
 // --- INPUT HANDLING ---
