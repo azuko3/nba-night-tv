@@ -20,15 +20,6 @@
                         "NBA"
                     ]
                 },
-                {
-                    "name": "Gametime Highlights",
-                    "channel_id": "UC0LrZO9wORIqn_aRJtKdgfA",
-                    "method": "search",
-                    "search_query": "Full Game Highlights",
-                    "must_contain": [
-                        "NBA"
-                    ]
-                }
             ]
         },
         {
