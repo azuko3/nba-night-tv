@@ -19,6 +19,16 @@
                     "must_contain": [
                         "NBA"
                     ]
+                },
+                {
+                    "name": "Gametime Highlights",
+                    "channel_id": "UC0LrZO9wORIqn_aRJtKdgfA",
+                    "method": "search",
+                    "search_query": "Full Game Highlights",
+                    "time_window_days": 2,
+                    "must_contain": [
+                        "NBA"
+                    ]
                 }
             ]
         },
