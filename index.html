@@ -61,21 +61,19 @@
         </div>
 
         <!-- Neon Remote Wrapper (Hit Area) -->
-        <!-- Wrapper stays fixed to capture hover, avoiding "shaking" when child moves -->
         <div id="remote-wrapper">
             <div id="remote-container">
-                <div class="remote-screen">
+
+                <div class="remote-brand">
                     <i class="fas fa-basketball-ball remote-icon"></i>
                 </div>
 
-                <div class="remote-ch-buttons">
+                <div class="remote-row">
                     <button class="remote-btn" onclick="switchChannel(1)">
-                        <i class="fas fa-chevron-up"></i>
-                        <span>CH</span>
+                        <i class="fas fa-chevron-up"></i><span>CH</span>
                     </button>
                     <button class="remote-btn" onclick="switchChannel(-1)">
-                        <i class="fas fa-chevron-down"></i>
-                        <span>CH</span>
+                        <i class="fas fa-chevron-down"></i><span>CH</span>
                     </button>
                 </div>
 
@@ -84,21 +82,20 @@
                 </div>
                 <div class="status-led" id="led"></div>
 
-                <div class="remote-vol-buttons">
+                <div class="remote-row">
                     <button class="remote-btn" onclick="adjustVolume(10)">
-                        <i class="fas fa-volume-up"></i>
-                        <span>VOL</span>
+                        <i class="fas fa-volume-up"></i><span>VOL</span>
                     </button>
                     <button class="remote-btn" onclick="adjustVolume(-10)">
-                        <i class="fas fa-volume-down"></i>
-                        <span>VOL</span>
+                        <i class="fas fa-volume-down"></i><span>VOL</span>
                     </button>
                 </div>
 
                 <div class="instructions">
                     SPACE = POWER
-                    <span>↑↓ CHANNEL &nbsp;·&nbsp; ←→ VOLUME</span>
+                    <span>↑↓ CH &nbsp;·&nbsp; ←→ VOL</span>
                 </div>
+
             </div>
         </div>
     </div>

@@ -367,7 +367,7 @@ body.debug-mode .video-player {
 /* --- SPLASH SCREEN TITLE --- */
 #splash-title {
     position: absolute;
-    top: 25%;
+    top: 20%;
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
@@ -435,111 +435,52 @@ body.debug-mode .video-player {
 
 #remote-wrapper {
     position: absolute;
-    top: 58%;
+    top: 68%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 200;
     transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-    width: 280px;
+    width: 220px;
     height: auto;
     display: flex;
     justify-content: center;
 }
 
 #remote-container {
-    width: 260px;
-    padding: 24px 20px;
-    background: linear-gradient(160deg, #1c1c1c, #0a0a0a);
-    border-radius: 28px;
-    border: 1px solid #2a2a2a;
+    width: 200px;
+    padding: 16px 14px;
+    background: linear-gradient(160deg, #1a1a1a, #0a0a0a);
+    border-radius: 24px;
+    border: 1px solid #252525;
     box-shadow:
         0 0 40px rgba(0, 0, 0, 0.9),
-        inset 0 1px 0 rgba(255,255,255,0.06);
+        inset 0 1px 0 rgba(255,255,255,0.05);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* --- PLAYING STATE (SLIDING SIDEBAR) --- */
-.tv-playing #remote-wrapper {
-    top: 20%;
-    left: 0;
-    transform: none;
-    width: 56px;
-    height: 320px;
-    justify-content: flex-start;
-    overflow: visible;
-}
-
-.tv-playing #remote-wrapper:hover {
-    width: 210px;
-}
-
-.tv-playing #remote-container {
-    width: 180px;
-    padding: 14px 12px;
-    gap: 10px;
-    transform: translateX(-190px);
-    transform-origin: top left;
-    opacity: 0.5;
-    background: rgba(12, 12, 12, 0.95);
-}
-
-.tv-playing #remote-wrapper:hover #remote-container {
-    transform: translateX(0);
-    opacity: 1;
-    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 200, 255, 0.1);
-}
-
-/* Remote "Screen" */
-.remote-screen {
-    width: 130px;
-    height: 80px;
-    background: #000;
-    border-radius: 12px;
-    border: 1px solid #333;
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 1);
+/* Brand mark (replaces big screen) */
+.remote-brand {
     display: flex;
-    justify-content: center;
     align-items: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.tv-playing .remote-screen {
-    height: 40px;
-    width: 100%;
-}
-
-.remote-screen::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: 12px;
-    padding: 1px;
-    background: linear-gradient(45deg, #00ffff, #ff00ff);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    opacity: 0.7;
+    justify-content: center;
+    padding: 6px 0 2px;
 }
 
 .remote-icon {
-    font-size: 2.4rem;
-    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.6rem;
+    color: rgba(255, 255, 255, 0.7);
     filter: drop-shadow(0 0 6px #ff00ff);
 }
 
-/* CH + VOL button rows */
-.remote-ch-buttons,
-.remote-vol-buttons {
+/* Button rows */
+.remote-row {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
-    justify-content: center;
 }
 
 .remote-btn {
@@ -547,14 +488,14 @@ body.debug-mode .video-player {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 10px 6px;
+    gap: 3px;
+    padding: 8px 4px;
     background: #141414;
-    border: 1px solid #2e2e2e;
-    border-radius: 10px;
-    color: #aaa;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    color: #888;
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     font-weight: 700;
     letter-spacing: 1.5px;
     text-transform: uppercase;
@@ -563,44 +504,43 @@ body.debug-mode .video-player {
 }
 
 .remote-btn i {
-    font-size: 1rem;
-    color: #fff;
+    font-size: 0.85rem;
+    color: #ccc;
 }
 
 .remote-btn:hover {
-    background: #1e1e1e;
+    background: #1c1c1c;
     border-color: #00ffff;
     color: #00ffff;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.15);
 }
 
+.remote-btn:hover i { color: #00ffff; }
+
 .remote-btn:active {
-    transform: scale(0.94);
-    background: #0a0a0a;
+    transform: scale(0.93);
 }
 
 /* Power Button */
 .power-wrapper {
     position: relative;
-    width: 72px;
-    height: 72px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: #111;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: inset 0 0 12px #000, 0 0 4px rgba(255,255,255,0.05);
+    box-shadow: inset 0 0 10px #000;
     cursor: pointer;
     transition: transform 0.1s;
 }
 
 .power-wrapper:hover {
-    box-shadow: inset 0 0 12px #000, 0 0 16px rgba(255, 0, 255, 0.3);
+    box-shadow: inset 0 0 10px #000, 0 0 14px rgba(255, 0, 255, 0.3);
 }
 
-.power-wrapper:active {
-    transform: scale(0.93);
-}
+.power-wrapper:active { transform: scale(0.92); }
 
 .power-wrapper::before {
     content: '';
@@ -610,43 +550,74 @@ body.debug-mode .video-player {
     background: linear-gradient(180deg, #00ffff, #ff00ff);
     z-index: -1;
     filter: blur(6px);
-    opacity: 0.55;
+    opacity: 0.5;
 }
 
 .power-icon {
-    font-size: 2rem;
+    font-size: 1.7rem;
     color: #fff;
-    text-shadow: 0 0 10px #ff00ff;
+    text-shadow: 0 0 8px #ff00ff;
 }
 
 /* Status Light */
 .status-led {
-    width: 7px;
-    height: 7px;
-    background: #2a2a2a;
+    width: 6px;
+    height: 6px;
+    background: #252525;
     border-radius: 50%;
     transition: background 0.3s, box-shadow 0.3s;
 }
 
 .tv-on .status-led {
     background: #00ff88;
-    box-shadow: 0 0 8px #00ff88, 0 0 16px rgba(0,255,136,0.4);
+    box-shadow: 0 0 6px #00ff88, 0 0 14px rgba(0,255,136,0.35);
 }
 
 /* Instructions */
 .instructions {
     text-align: center;
-    color: #555;
+    color: #4a4a4a;
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 0.68rem;
+    font-size: 0.62rem;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    line-height: 1.6;
+    line-height: 1.7;
 }
 
 .instructions span {
     display: block;
-    color: #3a3a3a;
+    color: #333;
+}
+
+/* --- PLAYING STATE (SLIDING SIDEBAR) --- */
+.tv-playing #remote-wrapper {
+    top: 20%;
+    left: 0;
+    transform: none;
+    width: 48px;
+    height: 280px;
+    justify-content: flex-start;
+    overflow: visible;
+}
+
+.tv-playing #remote-wrapper:hover {
+    width: 190px;
+}
+
+.tv-playing #remote-container {
+    width: 168px;
+    padding: 12px 10px;
+    gap: 8px;
+    transform: translateX(-178px);
+    transform-origin: top left;
+    opacity: 0.45;
+    background: rgba(10, 10, 10, 0.96);
+}
+
+.tv-playing #remote-wrapper:hover #remote-container {
+    transform: translateX(0);
+    opacity: 1;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(0,200,255,0.08);
 }
 
 /* Mobile specific adjustments */
