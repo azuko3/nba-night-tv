@@ -66,35 +66,34 @@
             <div id="remote-container">
 
                 <div class="remote-brand">
-                    <i class="fas fa-basketball-ball remote-icon"></i>
+                    <div class="brand-logo">
+                        <span class="brand-nba">NBA</span>
+                        <span class="brand-night">NIGHT</span>
+                    </div>
+                    <div class="brand-subtitle">NBA NIGHT TELEVISION™</div>
                 </div>
 
-                <div class="remote-row">
-                    <button class="remote-btn" onclick="switchChannel(1)">
-                        <i class="fas fa-chevron-up"></i><span>CH</span>
-                    </button>
-                    <button class="remote-btn" onclick="switchChannel(-1)">
-                        <i class="fas fa-chevron-down"></i><span>CH</span>
-                    </button>
-                </div>
+                <div class="remote-divider"></div>
 
+                <div class="remote-power-label">POWER</div>
                 <div class="power-wrapper" onclick="togglePower()">
                     <i class="fas fa-power-off power-icon"></i>
                 </div>
                 <div class="status-led" id="led"></div>
 
-                <div class="remote-row">
-                    <button class="remote-btn" onclick="adjustVolume(10)">
-                        <i class="fas fa-volume-up"></i><span>VOL</span>
-                    </button>
-                    <button class="remote-btn" onclick="adjustVolume(-10)">
-                        <i class="fas fa-volume-down"></i><span>VOL</span>
-                    </button>
-                </div>
+                <div class="remote-start-hint">POWER ON / HIT SPACE TO START</div>
 
-                <div class="instructions">
-                    SPACE = POWER
-                    <span>↑↓ CH &nbsp;·&nbsp; ←→ VOL</span>
+                <div class="remote-divider"></div>
+
+                <div class="remote-hints">
+                    <div class="hint-row">
+                        <span class="hint-keys">↑ ↓</span>
+                        <span class="hint-label">SWITCH CHANNEL</span>
+                    </div>
+                    <div class="hint-row">
+                        <span class="hint-keys">← →</span>
+                        <span class="hint-label">VOLUME CONTROL</span>
+                    </div>
                 </div>
 
             </div>

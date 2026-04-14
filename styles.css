@@ -440,104 +440,106 @@ body.debug-mode .video-player {
     transform: translate(-50%, -50%);
     z-index: 200;
     transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-    width: 220px;
-    height: auto;
+    width: 240px;
     display: flex;
     justify-content: center;
 }
 
 #remote-container {
-    width: 200px;
-    padding: 16px 14px;
-    background: linear-gradient(160deg, #1a1a1a, #0a0a0a);
-    border-radius: 24px;
-    border: 1px solid #252525;
-    box-shadow:
-        0 0 40px rgba(0, 0, 0, 0.9),
-        inset 0 1px 0 rgba(255,255,255,0.05);
+    width: 220px;
+    padding: 20px 18px;
+    background:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(160deg, #1a1a1a, #0d0d0d);
+    background-size: 20px 20px, 20px 20px, 100%;
+    border-radius: 20px;
+    border: 1px solid #222;
+    box-shadow: 0 0 40px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.04);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Brand mark (replaces big screen) */
+/* Brand Logo (MTV-style) */
 .remote-brand {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 0 2px;
-}
-
-.remote-icon {
-    font-size: 1.6rem;
-    color: rgba(255, 255, 255, 0.7);
-    filter: drop-shadow(0 0 6px #ff00ff);
-}
-
-/* Button rows */
-.remote-row {
-    display: flex;
-    gap: 8px;
-    width: 100%;
-}
-
-.remote-btn {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    padding: 8px 4px;
-    background: #141414;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    color: #888;
+    gap: 4px;
+    padding: 4px 0 2px;
+}
+
+.brand-logo {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    line-height: 1;
+}
+
+.brand-nba {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #00ffff;
+    text-shadow: 0 0 8px #00ffff, 0 0 20px rgba(0,255,255,0.4);
+}
+
+.brand-night {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #ff00ff;
+    text-shadow: 0 0 8px #ff00ff, 0 0 20px rgba(255,0,255,0.4);
+}
+
+.brand-subtitle {
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 0.55rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    color: #555;
     text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.15s;
 }
 
-.remote-btn i {
-    font-size: 0.85rem;
-    color: #ccc;
+/* Divider */
+.remote-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #2a2a2a, transparent);
 }
 
-.remote-btn:hover {
-    background: #1c1c1c;
-    border-color: #00ffff;
-    color: #00ffff;
-    box-shadow: 0 0 8px rgba(0, 255, 255, 0.15);
-}
-
-.remote-btn:hover i { color: #00ffff; }
-
-.remote-btn:active {
-    transform: scale(0.93);
+/* Power label */
+.remote-power-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #444;
+    text-transform: uppercase;
 }
 
 /* Power Button */
 .power-wrapper {
     position: relative;
-    width: 60px;
-    height: 60px;
+    width: 66px;
+    height: 66px;
     border-radius: 50%;
     background: #111;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: inset 0 0 10px #000;
+    box-shadow: inset 0 0 12px #000, inset 0 2px 4px rgba(255,255,255,0.04);
     cursor: pointer;
     transition: transform 0.1s;
 }
 
 .power-wrapper:hover {
-    box-shadow: inset 0 0 10px #000, 0 0 14px rgba(255, 0, 255, 0.3);
+    box-shadow: inset 0 0 12px #000, 0 0 18px rgba(255,0,255,0.35);
 }
 
 .power-wrapper:active { transform: scale(0.92); }
@@ -549,14 +551,14 @@ body.debug-mode .video-player {
     border-radius: 50%;
     background: linear-gradient(180deg, #00ffff, #ff00ff);
     z-index: -1;
-    filter: blur(6px);
+    filter: blur(7px);
     opacity: 0.5;
 }
 
 .power-icon {
-    font-size: 1.7rem;
+    font-size: 1.8rem;
     color: #fff;
-    text-shadow: 0 0 8px #ff00ff;
+    text-shadow: 0 0 10px #ff00ff;
 }
 
 /* Status Light */
@@ -570,23 +572,56 @@ body.debug-mode .video-player {
 
 .tv-on .status-led {
     background: #00ff88;
-    box-shadow: 0 0 6px #00ff88, 0 0 14px rgba(0,255,136,0.35);
+    box-shadow: 0 0 6px #00ff88, 0 0 14px rgba(0,255,136,0.4);
 }
 
-/* Instructions */
-.instructions {
-    text-align: center;
-    color: #4a4a4a;
+/* Start hint */
+.remote-start-hint {
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 0.62rem;
+    font-size: 0.6rem;
+    font-weight: 600;
     letter-spacing: 1.5px;
+    color: #555;
     text-transform: uppercase;
-    line-height: 1.7;
+    text-align: center;
 }
 
-.instructions span {
-    display: block;
-    color: #333;
+/* Keyboard hints */
+.remote-hints {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.hint-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hint-keys {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #888;
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 5px;
+    padding: 3px 8px;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    min-width: 42px;
+    text-align: center;
+}
+
+.hint-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #444;
+    text-transform: uppercase;
 }
 
 /* --- PLAYING STATE (SLIDING SIDEBAR) --- */
@@ -595,29 +630,29 @@ body.debug-mode .video-player {
     left: 0;
     transform: none;
     width: 48px;
-    height: 280px;
+    height: 300px;
     justify-content: flex-start;
     overflow: visible;
 }
 
 .tv-playing #remote-wrapper:hover {
-    width: 190px;
+    width: 200px;
 }
 
 .tv-playing #remote-container {
-    width: 168px;
-    padding: 12px 10px;
-    gap: 8px;
-    transform: translateX(-178px);
+    width: 178px;
+    padding: 14px 12px;
+    gap: 10px;
+    transform: translateX(-188px);
     transform-origin: top left;
-    opacity: 0.45;
-    background: rgba(10, 10, 10, 0.96);
+    opacity: 0.4;
+    background: rgba(10,10,10,0.97);
 }
 
 .tv-playing #remote-wrapper:hover #remote-container {
     transform: translateX(0);
     opacity: 1;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(0,200,255,0.08);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.8), 0 0 16px rgba(0,200,255,0.08);
 }
 
 /* Mobile specific adjustments */
