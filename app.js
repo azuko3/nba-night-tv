@@ -129,6 +129,7 @@ function createPlayerInstance(channelId, slot, vidIdx) {
 
     players[channelId][slot] = new YT.Player(divId, {
         videoId: videoId,
+        host: 'https://www.youtube-nocookie.com',
         playerVars: {
             'autoplay': 1,
             'controls': showControls,
