@@ -197,6 +197,10 @@ function startPoller() {
             let duration = activePlayer.getDuration();
 
             if (duration > 0) {
+                // Update progress bar
+                let pct = Math.min(100, (now / duration) * 100);
+                document.getElementById('progress-fill').style.width = pct + '%';
+
                 // Calculate Trigger Points
                 // Use Generic Config
                 let config = CHANNELS[currentChannel];
@@ -290,6 +294,9 @@ function performSwap(channelId) {
     chState.nextPrepared = false;
     chState.upNextShown = false;
     hideUpNext();
+    if (channelId === currentChannel) {
+        document.getElementById('progress-fill').style.width = '0%';
+    }
 
     // 4. Recycle Old Player (Load Next+1)
     let nextNextIndex = (chState.videoIndex + 1) % playlistData[channelId].length;
@@ -317,12 +324,34 @@ function performSwap(channelId) {
     }
 }
 
+// --- CHANNEL BADGE ---
+function updateChannelBadge(highlight) {
+    let badge = document.getElementById('channel-badge');
+    let numEl = document.getElementById('badge-number');
+    let nameEl = document.getElementById('badge-name');
+    let ch = CHANNELS[currentChannel];
+    numEl.textContent = `CH ${currentChannel}`;
+    nameEl.textContent = ch ? ch.name : '';
+    if (ch) badge.style.setProperty('--badge-color', ch.color);
+    if (highlight) {
+        badge.classList.remove('highlight');
+        void badge.offsetWidth; // reflow to restart animation
+        badge.classList.add('highlight');
+    }
+}
+
 // --- POWER LOGIC ---
 function togglePower() {
     isTVOn = !isTVOn;
     let frame = document.getElementById('tv-frame');
 
     if (isTVOn) {
+        // Boot flash animation
+        let flash = document.getElementById('boot-flash');
+        flash.classList.remove('flash');
+        void flash.offsetWidth;
+        flash.classList.add('flash');
+
         frame.classList.add('tv-playing');
         frame.classList.add('tv-on');
 
@@ -331,6 +360,7 @@ function togglePower() {
         let p = players[currentChannel][slot];
         if (p) { p.unMute(); p.setVolume(volume); p.playVideo(); }
 
+        updateChannelBadge(true);
         showSystemOSD("POWER ON");
 
         // Show Title after "POWER ON" fades
@@ -403,7 +433,8 @@ function switchChannel(direction) {
 
             // Generic Name Lookup
             let name = (CHANNELS[currentChannel] && CHANNELS[currentChannel].name) || "UNK";
-            showSystemOSD(`CH 0${currentChannel} ${name}`);
+            showSystemOSD(`CH ${currentChannel} · ${name}`);
+            updateChannelBadge(true);
 
             // Show Title after channel name fades (2.5s later)
             setTimeout(() => {

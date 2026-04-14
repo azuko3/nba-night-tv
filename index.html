@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NBA Smart TV (Server-Side)</title>
     <!-- FontAwesome for Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
@@ -29,6 +31,23 @@
         <!-- Static Noise -->
         <div id="static-overlay"></div>
 
+        <!-- Scan Lines (CRT effect) -->
+        <div id="scanlines"></div>
+
+        <!-- Boot Flash (CRT power-on) -->
+        <div id="boot-flash"></div>
+
+        <!-- Channel Badge (persistent corner indicator) -->
+        <div id="channel-badge">
+            <span id="badge-number">CH 1</span>
+            <span id="badge-name">RECAPS</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="progress-bar">
+            <div id="progress-fill"></div>
+        </div>
+
         <!-- Video Players Container -->
         <div id="players-container">
             <!-- Players will be injected here -->
@@ -49,17 +68,36 @@
                     <i class="fas fa-basketball-ball remote-icon"></i>
                 </div>
 
-                <div class="instructions">POWER</div>
+                <div class="remote-ch-buttons">
+                    <button class="remote-btn" onclick="switchChannel(1)">
+                        <i class="fas fa-chevron-up"></i>
+                        <span>CH</span>
+                    </button>
+                    <button class="remote-btn" onclick="switchChannel(-1)">
+                        <i class="fas fa-chevron-down"></i>
+                        <span>CH</span>
+                    </button>
+                </div>
 
                 <div class="power-wrapper" onclick="togglePower()">
                     <i class="fas fa-power-off power-icon"></i>
                 </div>
                 <div class="status-led" id="led"></div>
 
+                <div class="remote-vol-buttons">
+                    <button class="remote-btn" onclick="adjustVolume(10)">
+                        <i class="fas fa-volume-up"></i>
+                        <span>VOL</span>
+                    </button>
+                    <button class="remote-btn" onclick="adjustVolume(-10)">
+                        <i class="fas fa-volume-down"></i>
+                        <span>VOL</span>
+                    </button>
+                </div>
+
                 <div class="instructions">
-                    POWER ON TO START
-                    <span>SWIPE TO CHANGE CHANNEL</span>
-                    <span>ARROWS: VOL / CH</span>
+                    SPACE = POWER
+                    <span>↑↓ CHANNEL &nbsp;·&nbsp; ←→ VOLUME</span>
                 </div>
             </div>
         </div>

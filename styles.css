@@ -7,7 +7,7 @@ body {
     height: 100%;
     background-color: #050505;
     overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Barlow Condensed', 'Segoe UI', Tahoma, sans-serif;
     user-select: none;
 }
 
@@ -87,9 +87,9 @@ body.debug-mode .video-player {
     position: absolute;
     top: 50px;
     right: 40px;
-    font-size: 1.5rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-weight: 700;
+    font-size: 1.4rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
     letter-spacing: 2px;
     color: #fff;
     z-index: 200;
@@ -228,7 +228,8 @@ body.debug-mode .video-player {
 }
 
 .osd-title {
-    font-size: 2rem;
+    font-size: 2.2rem;
+    font-family: 'Barlow Condensed', sans-serif;
     font-weight: 800;
     color: #fff;
     line-height: 1.1;
@@ -249,6 +250,120 @@ body.debug-mode .video-player {
 }
 
 
+/* --- SCAN LINES (CRT effect) --- */
+#scanlines {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.06) 0px,
+        rgba(0, 0, 0, 0.06) 1px,
+        transparent 1px,
+        transparent 3px
+    );
+    pointer-events: none;
+    z-index: 55;
+}
+
+/* --- BOOT FLASH (CRT power-on) --- */
+#boot-flash {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 300;
+}
+
+#boot-flash.flash {
+    animation: bootFlash 0.5s ease-out forwards;
+}
+
+@keyframes bootFlash {
+    0%   { opacity: 0.9; }
+    30%  { opacity: 0.5; }
+    100% { opacity: 0; }
+}
+
+/* --- CHANNEL BADGE --- */
+#channel-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 180;
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    opacity: 0.35;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+#tv-on #channel-badge,
+.tv-on #channel-badge {
+    display: flex;
+}
+
+#channel-badge.highlight {
+    opacity: 1;
+    animation: badgePop 2.5s ease-out forwards;
+}
+
+@keyframes badgePop {
+    0%   { opacity: 1; }
+    70%  { opacity: 1; }
+    100% { opacity: 0.35; }
+}
+
+#badge-number {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #fff;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+#badge-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #aaa;
+    text-transform: uppercase;
+    margin-top: 2px;
+    text-align: right;
+}
+
+/* --- PROGRESS BAR --- */
+#progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    z-index: 180;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+}
+
+.tv-on #progress-bar {
+    opacity: 1;
+}
+
+#progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #0050ff, #00ffff);
+    transition: width 0.2s linear;
+    box-shadow: 0 0 6px rgba(0, 200, 255, 0.6);
+}
+
 /* --- SPLASH SCREEN TITLE --- */
 #splash-title {
     position: absolute;
@@ -263,7 +378,8 @@ body.debug-mode .video-player {
 
 #splash-title span {
     display: block;
-    font-size: 5rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 5.5rem;
     font-weight: 900;
     line-height: 1;
     color: #fff;
@@ -317,101 +433,74 @@ body.debug-mode .video-player {
 
 /* --- NEON REMOTE STRUCTURE --- */
 
-/* 1. Wrapper: The positioning anchor & Hit Area */
 #remote-wrapper {
     position: absolute;
-    top: 65%;
+    top: 58%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 200;
-    transition: all 0.5s;
-    /* Ensure it has size to contain the remote */
-    width: 340px;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    width: 280px;
     height: auto;
     display: flex;
     justify-content: center;
 }
 
-/* 2. Container: The Visible Remote Card */
 #remote-container {
-    width: 300px;
-    padding: 20px;
-    background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
-    border-radius: 30px;
+    width: 260px;
+    padding: 24px 20px;
+    background: linear-gradient(160deg, #1c1c1c, #0a0a0a);
+    border-radius: 28px;
+    border: 1px solid #2a2a2a;
     box-shadow:
-        0 0 30px rgba(0, 0, 0, 0.8),
-        inset 0 0 2px rgba(255, 255, 255, 0.1),
-        0 0 0 1px #222;
+        0 0 40px rgba(0, 0, 0, 0.9),
+        inset 0 1px 0 rgba(255,255,255,0.06);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* --- PLAYING STATE (SLIDING SIDEBAR) --- */
-
-/* Move the WRAPPER to the side to create the dock */
 .tv-playing #remote-wrapper {
     top: 20%;
     left: 0;
     transform: none;
-    /* Reset center alignment */
-    width: 60px;
-    /* Small safe hit area triggered by mouse at edge */
-    height: 300px;
-    /* Vertical strip */
+    width: 56px;
+    height: 320px;
     justify-content: flex-start;
-    /* Align remote to top-left of wrapper */
     overflow: visible;
-    /* Allow remote to slide out */
 }
 
-/* Expand wrapper on hover so mouse doesn't lose it */
 .tv-playing #remote-wrapper:hover {
-    width: 200px;
-    /* Expand hit area to cover the slid-out remote */
+    width: 210px;
 }
 
-/* The Remote itself in Mini Mode */
 .tv-playing #remote-container {
-    width: 160px;
-    padding: 10px;
-    transform: scale(0.8) translateX(-130px);
-    /* Hide it off screen to the left */
+    width: 180px;
+    padding: 14px 12px;
+    gap: 10px;
+    transform: translateX(-190px);
     transform-origin: top left;
-    opacity: 0.6;
-    background: rgba(10, 10, 10, 0.9);
-    border: 1px solid #333;
+    opacity: 0.5;
+    background: rgba(12, 12, 12, 0.95);
 }
 
-/* Slide IN when Wrapper is hovered */
 .tv-playing #remote-wrapper:hover #remote-container {
-    transform: scale(0.9) translateX(0);
-    /* Slide into view */
+    transform: translateX(0);
     opacity: 1;
-    background: #111;
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
-}
-
-/* Adjust screen element in mini mode */
-.tv-playing .remote-screen {
-    height: 50px;
-    width: 100%;
-    margin-bottom: 5px;
-    /* Make the icon pulsate or move on hover if desired */
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 200, 255, 0.1);
 }
 
 /* Remote "Screen" */
 .remote-screen {
-    width: 140px;
-    height: 100px;
+    width: 130px;
+    height: 80px;
     background: #000;
-    border-radius: 15px;
-    border: 2px solid #333;
-    box-shadow:
-        0 0 15px rgba(0, 255, 255, 0.2),
-        inset 0 0 20px rgba(0, 0, 0, 1);
+    border-radius: 12px;
+    border: 1px solid #333;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 1);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -419,45 +508,98 @@ body.debug-mode .video-player {
     overflow: hidden;
 }
 
+.tv-playing .remote-screen {
+    height: 40px;
+    width: 100%;
+}
+
 .remote-screen::before {
     content: '';
     position: absolute;
-    inset: -2px;
-    border-radius: 15px;
-    padding: 2px;
+    inset: -1px;
+    border-radius: 12px;
+    padding: 1px;
     background: linear-gradient(45deg, #00ffff, #ff00ff);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    opacity: 0.8;
+    opacity: 0.7;
 }
 
 .remote-icon {
-    font-size: 3rem;
-    color: rgba(255, 255, 255, 0.9);
-    filter: drop-shadow(0 0 5px #ff00ff);
+    font-size: 2.4rem;
+    color: rgba(255, 255, 255, 0.85);
+    filter: drop-shadow(0 0 6px #ff00ff);
+}
+
+/* CH + VOL button rows */
+.remote-ch-buttons,
+.remote-vol-buttons {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+}
+
+.remote-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 6px;
+    background: #141414;
+    border: 1px solid #2e2e2e;
+    border-radius: 10px;
+    color: #aaa;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.remote-btn i {
+    font-size: 1rem;
+    color: #fff;
+}
+
+.remote-btn:hover {
+    background: #1e1e1e;
+    border-color: #00ffff;
+    color: #00ffff;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.remote-btn:active {
+    transform: scale(0.94);
+    background: #0a0a0a;
 }
 
 /* Power Button */
 .power-wrapper {
     position: relative;
-    width: 80px;
-    height: 80px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     background: #111;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow:
-        inset 0 0 10px #000,
-        0 0 5px rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 12px #000, 0 0 4px rgba(255,255,255,0.05);
     cursor: pointer;
     transition: transform 0.1s;
 }
 
+.power-wrapper:hover {
+    box-shadow: inset 0 0 12px #000, 0 0 16px rgba(255, 0, 255, 0.3);
+}
+
 .power-wrapper:active {
-    transform: scale(0.95);
+    transform: scale(0.93);
 }
 
 .power-wrapper::before {
@@ -467,44 +609,44 @@ body.debug-mode .video-player {
     border-radius: 50%;
     background: linear-gradient(180deg, #00ffff, #ff00ff);
     z-index: -1;
-    filter: blur(5px);
-    opacity: 0.6;
+    filter: blur(6px);
+    opacity: 0.55;
 }
 
 .power-icon {
-    font-size: 2.5rem;
+    font-size: 2rem;
     color: #fff;
     text-shadow: 0 0 10px #ff00ff;
+}
+
+/* Status Light */
+.status-led {
+    width: 7px;
+    height: 7px;
+    background: #2a2a2a;
+    border-radius: 50%;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+
+.tv-on .status-led {
+    background: #00ff88;
+    box-shadow: 0 0 8px #00ff88, 0 0 16px rgba(0,255,136,0.4);
 }
 
 /* Instructions */
 .instructions {
     text-align: center;
-    color: #666;
-    font-size: 0.7rem;
-    letter-spacing: 1px;
+    color: #555;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
+    line-height: 1.6;
 }
 
 .instructions span {
     display: block;
-    margin-top: 5px;
-    color: #444;
-}
-
-/* Status Light */
-.status-led {
-    width: 8px;
-    height: 8px;
-    background: #333;
-    border-radius: 50%;
-    box-shadow: 0 0 2px #000;
-    transition: background 0.3s, box-shadow 0.3s;
-}
-
-.tv-on .status-led {
-    background: #00ff00;
-    box-shadow: 0 0 10px #00ff00;
+    color: #3a3a3a;
 }
 
 /* Mobile specific adjustments */
