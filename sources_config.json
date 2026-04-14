@@ -181,20 +181,20 @@
                     "name": "Bleacher Report",
                     "channel_id": "UC9-OpMMVoNP5o10_Iyq7Ndw",
                     "method": "search",
-                    "search_query": "NBA Trade | NBA News",
+                    "search_query": "NBA",
                     "time_window_days": 3
                 },
                 {
                     "name": "KOT4Q",
                     "playlist_id": "UU8xZt-P1j-G7ckm0LM2p6eQ",
                     "method": "playlist",
-                    "time_window_days": 7
+                    "time_window_days": 21
                 },
                 {
                     "name": "Sporting Logically (News)",
                     "playlist_id": "UUR8s3egas481EMmOxr5fBmg",
                     "method": "playlist",
-                    "time_window_days": 5,
+                    "time_window_days": 14,
                     "exclude_keywords": [
                         "History",
                         "Why"
@@ -204,7 +204,7 @@
                     "name": "Synthetic Sports (News)",
                     "playlist_id": "UUiDPnh65zGGFwVJ0jRMB7Ug",
                     "method": "playlist",
-                    "time_window_days": 5
+                    "time_window_days": 14
                 }
             ]
         },

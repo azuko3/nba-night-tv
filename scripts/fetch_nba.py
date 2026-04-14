@@ -52,6 +52,36 @@ def get_uploads_from_playlist(playlist_id, days_back, limit=20):
         return []
 
 # --- METHOD B: EXPENSIVE (Search) ---
+def search_global_keyword(keyword, days_back, limit=10):
+    """Global search by keyword across all YouTube. Expensive (100 units per call)."""
+    base_url = "https://www.googleapis.com/youtube/v3/search"
+    published_after = (datetime.now(timezone.utc) - timedelta(days=days_back)).isoformat()
+
+    params = {
+        "part": "snippet",
+        "q": keyword,
+        "type": "video",
+        "order": "date",
+        "publishedAfter": published_after,
+        "maxResults": limit,
+        "key": API_KEY
+    }
+
+    try:
+        print(f"    Running GLOBAL SEARCH for '{keyword}'...")
+        response = requests.get(base_url, params=params)
+        data = response.json()
+
+        if "items" not in data:
+            return []
+
+        return [item["id"]["videoId"] for item in data["items"]]
+
+    except Exception as e:
+        print(f"Error in global search for '{keyword}': {e}")
+        return []
+
+
 def search_channel_videos(channel_id, query, days_back, limit=10):
     """Specific search on a channel. Expensive (100 units). Good for messy channels."""
     base_url = "https://www.googleapis.com/youtube/v3/search"
@@ -163,11 +193,23 @@ def main():
         print(f"\nProcessing Channel {ch_config['id']}: {ch_config['name']}")
         channel_videos = []
         
-        # Special case: Deni Avdija (Global Keyword Search)
+        # Special case: Global Keyword Search (e.g. Deni Avdija)
         if ch_config.get("type") == "keyword_search":
-            # For now, we skip global search to save quota unless specifically requested
-            # You can implement global search using search_channel_videos without channelId
-            print("  Skipping global keyword search.")
+            keywords = ch_config.get("keywords", [])
+            days = ch_config.get("time_window_days", 7)
+            seen = set()
+
+            for keyword in keywords:
+                raw_ids = search_global_keyword(keyword, days)
+                videos_with_details = fetch_video_details(raw_ids)
+                filtered = filter_videos(videos_with_details, config["settings"], {})
+                print(f"    -> Kept {len(filtered)} videos for '{keyword}'.")
+                for vid in filtered:
+                    if vid["id"] not in seen:
+                        seen.add(vid["id"])
+                        channel_videos.append(vid)
+
+            final_playlist[ch_config["id"]] = channel_videos
             continue
 
         for source in ch_config.get("sources", []):
