@@ -1,26 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <defs>
     <filter id="glow">
-      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feGaussianBlur stdDeviation="1.2" result="blur"/>
       <feMerge>
         <feMergeNode in="blur"/>
         <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
+    <radialGradient id="ball" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#cc44ff"/>
+      <stop offset="100%" stop-color="#7700cc"/>
+    </radialGradient>
   </defs>
 
   <!-- Background -->
-  <rect width="32" height="32" rx="6" fill="#050505"/>
+  <rect width="32" height="32" rx="7" fill="#0a0a0a"/>
 
-  <!-- N letter with cyan glow -->
-  <text
-    x="16" y="24"
-    text-anchor="middle"
-    font-family="Arial Black, sans-serif"
-    font-weight="900"
-    font-size="24"
-    fill="#00ffff"
-    filter="url(#glow)"
-  >N</text>
+  <!-- Basketball circle -->
+  <circle cx="16" cy="16" r="11" fill="url(#ball)" filter="url(#glow)"/>
+
+  <!-- Basketball lines -->
+  <g stroke="#0a0a0a" stroke-width="1.1" fill="none" opacity="0.7">
+    <!-- Vertical curve -->
+    <path d="M16 5 Q20 16 16 27"/>
+    <path d="M16 5 Q12 16 16 27"/>
+    <!-- Horizontal line -->
+    <line x1="5" y1="16" x2="27" y2="16"/>
+  </g>
 </svg>

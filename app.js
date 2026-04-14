@@ -366,8 +366,8 @@ function togglePower() {
         // Show Title after "POWER ON" fades
         setTimeout(() => {
             if (isTVOn) {
-                let currentItem = playlistData[currentChannel][channelState[currentChannel].videoIndex];
-                let title = (typeof currentItem === 'string') ? "" : currentItem.title;
+                let currentItem = playlistData[currentChannel]?.[channelState[currentChannel].videoIndex];
+                let title = (currentItem && typeof currentItem !== 'string') ? currentItem.title : "";
                 if (title) showOSD(title);
             }
         }, 2200);
@@ -413,7 +413,7 @@ function switchChannel(direction) {
 
         // Mute Old Channel FIRST
         let oldSlot = channelState[oldCh].activeSlot;
-        players[oldCh][oldSlot].mute();
+        if (players[oldCh][oldSlot]) players[oldCh][oldSlot].mute();
 
         showStatic();
         setTimeout(() => {
@@ -438,9 +438,9 @@ function switchChannel(direction) {
 
             // Show Title after channel name fades (2.5s later)
             setTimeout(() => {
-                if (channelId === currentChannel && isTVOn) {
-                    let currentItem = playlistData[currentChannel][channelState[currentChannel].videoIndex];
-                    let title = (typeof currentItem === 'string') ? "" : currentItem.title;
+                if (isTVOn) {
+                    let currentItem = playlistData[currentChannel]?.[channelState[currentChannel].videoIndex];
+                    let title = (currentItem && typeof currentItem !== 'string') ? currentItem.title : "";
                     if (title) showOSD(title);
                 }
             }, 2500);
