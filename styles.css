@@ -658,16 +658,65 @@ body.debug-mode .video-player {
 
 /* Mobile specific adjustments */
 @media (max-width: 600px) {
-    #remote-wrapper {
-        width: 280px;
-    }
 
+    /* Remote */
+    #remote-wrapper {
+        width: 240px;
+    }
     #remote-container {
         width: 100%;
     }
 
+    /* Content OSD — fix green-covers-screen bug:
+       remove min-width and conflicting top+bottom */
     #osd-display {
-        font-size: 1.5rem;
-        top: 5%;
+        min-width: unset;
+        width: 90vw;
+        bottom: 60px;
+        padding: 10px 16px;
+    }
+
+    .osd-title {
+        font-size: 1.3rem;
+    }
+
+    .osd-subtitle {
+        font-size: 0.75rem;
+    }
+
+    /* System OSD */
+    #osd-system {
+        top: 16px;
+        right: 16px;
+        font-size: 1.1rem;
+        padding: 7px 14px;
+    }
+
+    /* Up Next */
+    #osd-up-next {
+        top: 16px;
+        left: 16px;
+        max-width: 65vw;
+        padding: 8px 14px;
+    }
+
+    #osd-up-next .up-next-title {
+        font-size: 0.9rem;
+    }
+
+    /* Channel badge */
+    #channel-badge {
+        top: 14px;
+        right: 14px;
+    }
+
+    /* Splash title */
+    #splash-title span {
+        font-size: 3.5rem;
+        letter-spacing: 6px;
+    }
+
+    #splash-title span:nth-child(2) {
+        font-size: 4rem;
     }
 }
