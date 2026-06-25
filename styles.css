@@ -218,18 +218,6 @@ body.debug-mode .video-player {
     line-height: 1.2;
 }
 
-@keyframes slideUpFade {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, 20px);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-}
-
 .osd-label {
     font-size: 0.7rem;
     letter-spacing: 2px;
@@ -276,7 +264,9 @@ body.debug-mode .video-player {
 
     background: radial-gradient(ellipse at center, rgba(0, 14, 32, 0.88) 0%, rgba(0, 0, 0, 0.97) 100%);
     backdrop-filter: blur(4px);
-    animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* Pure centered fade-in (slideUpFade's translate(-50%) would shove a
+       full-screen overlay half a screen to the left, then snap to center). */
+    animation: osdFadeIn 0.5s ease;
 }
 
 .offair-card {
