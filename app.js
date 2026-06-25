@@ -527,18 +527,25 @@ function showOSD(text) {
     }
 
     osd.innerHTML = htmlContent;
+    osd.style.opacity = '1';
     osd.style.display = 'flex'; // Flex for centering
 
     if (window.osdTimer) clearTimeout(window.osdTimer);
-    // Show for 10s, then fade to subtle persistent bar
+    if (window.osdHideTimer) clearTimeout(window.osdHideTimer);
+    // Show for ~6s, then fade out and remove
     window.osdTimer = setTimeout(() => {
-        osd.style.opacity = '0.4';
-    }, 10000);
+        osd.style.opacity = '0';
+        window.osdHideTimer = setTimeout(() => {
+            osd.style.display = 'none';
+            osd.style.opacity = '1';
+        }, 500); // matches CSS opacity transition
+    }, 6000);
 }
 
 function hideOSD() {
     let osd = document.getElementById('osd-display');
     if (window.osdTimer) clearTimeout(window.osdTimer);
+    if (window.osdHideTimer) clearTimeout(window.osdHideTimer);
     osd.style.display = 'none';
     osd.style.opacity = '1';
 }
