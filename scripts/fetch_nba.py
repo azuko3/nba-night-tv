@@ -139,30 +139,40 @@ def filter_videos(videos_data, settings, source_rules):
     valid_videos = []
     
     for video in videos_data:
-        vid_id = video["id"]
-        title = video["snippet"]["title"]
-        duration_iso = video["contentDetails"]["duration"] 
-        is_embeddable = video["status"]["embeddable"]
-        
-        # 1. Must be embeddable
-        if not is_embeddable:
+        # Safe access: live streams / premieres can be missing keys (e.g. no duration)
+        vid_id = video.get("id")
+        snippet = video.get("snippet", {})
+        content_details = video.get("contentDetails", {})
+        status = video.get("status", {})
+
+        title = snippet.get("title", "")
+        duration_iso = content_details.get("duration")
+        is_embeddable = status.get("embeddable", False)
+
+        # 1. Must be identifiable and embeddable
+        if not vid_id or not is_embeddable:
             continue
 
-        # 2. Duration Check
+        # 2. Skip live streams / upcoming premieres (no fixed duration)
+        if not duration_iso:
+            print(f"    Skipped (No duration / live): {title}")
+            continue
+
+        # 3. Duration Check
         try:
             duration = isodate.parse_duration(duration_iso)
             if settings.get("ignore_shorts", True) and duration.total_seconds() < 60:
                 continue
         except:
-            pass 
+            pass
 
-        # 3. Exclude Keywords
+        # 4. Exclude Keywords
         exclude_words = source_rules.get("exclude_keywords", [])
         if any(word.lower() in title.lower() for word in exclude_words):
             print(f"    Skipped (Exclude): {title}")
             continue
 
-        # 4. Must Contain
+        # 5. Must Contain
         must_words = source_rules.get("must_contain", [])
         if must_words:
             if not any(word.lower() in title.lower() for word in must_words):

@@ -148,6 +148,7 @@ body.debug-mode .video-player {
     max-width: 80%;
 
     animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: opacity 2s ease;
 }
 
 /* 3. Up Next OSD (Top Left) */
@@ -247,6 +248,73 @@ body.debug-mode .video-player {
     padding-top: 4px;
     margin-top: 2px;
     width: 100%;
+}
+
+
+/* --- OFF-AIR STANDBY (empty channel / off-season) --- */
+#osd-offair {
+    position: absolute;
+    inset: 0;
+    z-index: 120;
+
+    display: none;
+    /* toggled to flex from JS */
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    background: radial-gradient(ellipse at center, rgba(0, 14, 32, 0.88) 0%, rgba(0, 0, 0, 0.97) 100%);
+    backdrop-filter: blur(4px);
+    animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.offair-card {
+    padding: 42px 64px;
+    border: 1px solid rgba(0, 255, 136, 0.22);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 50px rgba(0, 80, 255, 0.15), inset 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.offair-label {
+    font-size: 0.9rem;
+    letter-spacing: 4px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #ff3b3b;
+    margin-bottom: 16px;
+    animation: offairBlink 1.6s steps(1, end) infinite;
+}
+
+@keyframes offairBlink {
+    50% {
+        opacity: 0.2;
+    }
+}
+
+.offair-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 3.2rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    text-shadow: 0 0 22px rgba(0, 255, 136, 0.3);
+    margin-bottom: 18px;
+}
+
+.offair-sub {
+    font-size: 1.05rem;
+    color: #9fdfff;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+}
+
+.offair-hint {
+    font-size: 0.78rem;
+    color: #888;
+    letter-spacing: 2px;
+    text-transform: uppercase;
 }
 
 
@@ -702,6 +770,24 @@ body.debug-mode .video-player {
 
     #osd-up-next .up-next-title {
         font-size: 0.9rem;
+    }
+
+    /* Off-Air Standby */
+    .offair-card {
+        padding: 28px 28px;
+        max-width: 86vw;
+    }
+
+    .offair-title {
+        font-size: 2.1rem;
+    }
+
+    .offair-sub {
+        font-size: 0.85rem;
+    }
+
+    .offair-hint {
+        font-size: 0.68rem;
     }
 
     /* Channel badge */

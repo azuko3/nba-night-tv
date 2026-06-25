@@ -93,6 +93,20 @@ window.onYouTubeIframeAPIReady = function () {
             initChannel(i);
         }
         startPoller();
+
+        // If user powered on before init completed, sync OSD/standby now that data is ready
+        if (isTVOn) {
+            if (isChannelEmpty(currentChannel)) {
+                showOffAir();
+            } else {
+                hideOffAir();
+                setTimeout(() => {
+                    let item = playlistData[currentChannel]?.[channelState[currentChannel].videoIndex];
+                    let title = (item && typeof item !== 'string') ? item.title : "";
+                    if (title) showOSD(title);
+                }, 1500);
+            }
+        }
     });
 }
 
@@ -168,12 +182,19 @@ function createPlayerInstance(channelId, slot, vidIdx) {
 
                     if (!isThisSlotActive && !isInitialStart && !isPreStart) {
                         // Background Player -> Pause
-                        // Wait tiny bit to ensure buffer fill?
-                        // No, YouTube PLAYING state implies buffer is sufficient.
                         if (isDebug) console.log(`[DEBUG] Pausing background player: Ch${channelId}-${slot}`);
                         e.target.pauseVideo();
                     } else {
                         if (isDebug) console.log(`[DEBUG] Player allowed to play: Ch${channelId}-${slot}`);
+                        // Active player just started — show OSD if TV is on and no OSD visible yet
+                        if (isTVOn && channelId === currentChannel) {
+                            let osd = document.getElementById('osd-display');
+                            if (osd.style.display === 'none' || osd.style.display === '') {
+                                let item = playlistData[channelId]?.[channelState[channelId].videoIndex];
+                                let title = (item && typeof item !== 'string') ? item.title : "";
+                                if (title) setTimeout(() => { if (isTVOn) showOSD(title); }, 3000);
+                            }
+                        }
                     }
                 }
             }
@@ -363,14 +384,20 @@ function togglePower() {
         updateChannelBadge(true);
         showSystemOSD("POWER ON");
 
-        // Show Title after "POWER ON" fades
-        setTimeout(() => {
-            if (isTVOn) {
-                let currentItem = playlistData[currentChannel]?.[channelState[currentChannel].videoIndex];
-                let title = (currentItem && typeof currentItem !== 'string') ? currentItem.title : "";
-                if (title) showOSD(title);
-            }
-        }, 2200);
+        // Empty channel (e.g. off-season): show standby card instead of a title
+        if (isChannelEmpty(currentChannel)) {
+            showOffAir();
+        } else {
+            hideOffAir();
+            // Show Title after "POWER ON" fades
+            setTimeout(() => {
+                if (isTVOn) {
+                    let currentItem = playlistData[currentChannel]?.[channelState[currentChannel].videoIndex];
+                    let title = (currentItem && typeof currentItem !== 'string') ? currentItem.title : "";
+                    if (title) showOSD(title);
+                }
+            }, 2200);
+        }
     } else {
         frame.classList.remove('tv-playing');
         frame.classList.remove('tv-on');
@@ -379,6 +406,9 @@ function togglePower() {
         // Usually Smart TVs pause content. Let's Pause to save bandwidth?
         // User said "Start straight away... run behind".
         // I'll just MUTE all.
+        hideOSD();
+        hideUpNext();
+        hideOffAir();
         for (let c in players) {
             if (players[c].A) players[c].A.mute();
             if (players[c].B) players[c].B.mute();
@@ -417,19 +447,24 @@ function switchChannel(direction) {
 
         showStatic();
         setTimeout(() => {
-            // Hide Old Channel Visuals
-            document.getElementById(`player-${oldCh}-A`).classList.remove('active');
-            document.getElementById(`player-${oldCh}-B`).classList.remove('active');
+            // Hide Old Channel Visuals + OSD
+            // (Empty channels have no player divs, so guard against null.)
+            hideOSD();
+            document.getElementById(`player-${oldCh}-A`)?.classList.remove('active');
+            document.getElementById(`player-${oldCh}-B`)?.classList.remove('active');
 
             // Show New Channel Active Visual
             let newSlot = channelState[currentChannel].activeSlot;
-            document.getElementById(`player-${currentChannel}-${newSlot}`).classList.add('active');
+            document.getElementById(`player-${currentChannel}-${newSlot}`)?.classList.add('active');
 
             // Audio
             let p = players[currentChannel][newSlot];
-            p.unMute(); p.setVolume(volume); p.playVideo();
+            if (p) { p.unMute(); p.setVolume(volume); p.playVideo(); }
 
             hideStatic();
+
+            // Toggle Off-Air standby for the landed channel
+            if (isChannelEmpty(currentChannel)) showOffAir(); else hideOffAir();
 
             // Generic Name Lookup
             let name = (CHANNELS[currentChannel] && CHANNELS[currentChannel].name) || "UNK";
@@ -495,8 +530,17 @@ function showOSD(text) {
     osd.style.display = 'flex'; // Flex for centering
 
     if (window.osdTimer) clearTimeout(window.osdTimer);
-    // Longer timeout for reading big titles
-    window.osdTimer = setTimeout(() => osd.style.display = 'none', 4000);
+    // Show for 10s, then fade to subtle persistent bar
+    window.osdTimer = setTimeout(() => {
+        osd.style.opacity = '0.4';
+    }, 10000);
+}
+
+function hideOSD() {
+    let osd = document.getElementById('osd-display');
+    if (window.osdTimer) clearTimeout(window.osdTimer);
+    osd.style.display = 'none';
+    osd.style.opacity = '1';
 }
 
 function showUpNext(title) {
@@ -516,6 +560,21 @@ function showUpNext(title) {
 function hideUpNext() {
     let osd = document.getElementById('osd-up-next');
     osd.style.display = 'none';
+}
+
+// --- OFF-AIR STANDBY (empty channel / off-season) ---
+function isChannelEmpty(ch) {
+    return !playlistData[ch] || playlistData[ch].length === 0;
+}
+
+function showOffAir() {
+    let el = document.getElementById('osd-offair');
+    if (el) el.style.display = 'flex';
+}
+
+function hideOffAir() {
+    let el = document.getElementById('osd-offair');
+    if (el) el.style.display = 'none';
 }
 
 // --- CONTEXT ENGINE (Game ID Parsing) ---
