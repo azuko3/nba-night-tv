@@ -152,6 +152,7 @@ function createPlayerInstance(channelId, slot, vidIdx) {
             'modestbranding': 1,
             'rel': 0,
             'iv_load_policy': 3, // Strict: Hide video annotations
+            'cc_load_policy': 0, // Hide closed captions / subtitles by default
             'mute': 1
         },
         events: {
@@ -171,6 +172,10 @@ function createPlayerInstance(channelId, slot, vidIdx) {
                 // If video starts PLAYING (1) and it is NOT the active visual slot, PAUSE it.
                 // This ensures background videos buffer just enough and then stop.
                 if (e.data === YT.PlayerState.PLAYING) {
+                    // Kill captions/subtitles every time a video starts (incl. recycled/swapped
+                    // players). cc_load_policy alone doesn't hide tracks that default to ON.
+                    try { e.target.unloadModule('captions'); e.target.unloadModule('cc'); } catch (err) {}
+
                     let currentActiveSlot = channelState[channelId].activeSlot;
                     let isThisSlotActive = (slot === currentActiveSlot && channelId === currentChannel);
 
