@@ -85,37 +85,15 @@
         },
         {
             "id": "3",
-            "name": "STORIES & HISTORY",
-            "description": "Documentaries (Low Volume - Playlist Method)",
+            "name": "CLASSIC GAMES",
+            "description": "Official NBA classic games, All-Star & iconic moments",
             "type": "shuffle_mix",
             "sources": [
                 {
-                    "name": "JxmyHighroller",
-                    "playlist_id": "UU3L9XPe0_FGfRG-CMGtBvFg",
+                    "name": "NBA Classic Games (Official)",
+                    "playlist_id": "PLlVlyGVtvuVniS7jx4DyESaKRUANIzyhE",
                     "method": "playlist",
-                    "time_window_days": 365
-                },
-                {
-                    "name": "Mike Korzemba",
-                    "playlist_id": "UUp3dgMf1OUP2XqOpyOY2bzQ",
-                    "method": "playlist",
-                    "time_window_days": 365
-                },
-                {
-                    "name": "Clayton Crowley",
-                    "playlist_id": "UUPhN8QINb_UXV5DrHjCTqyg",
-                    "method": "playlist",
-                    "time_window_days": 365
-                },
-                {
-                    "name": "Jonny Arnett",
-                    "playlist_id": "UUSgbEY-tEu0S_ill_fEL82w",
-                    "method": "playlist",
-                    "time_window_days": 90,
-                    "exclude_keywords": [
-                        "Member",
-                        "Q&A"
-                    ]
+                    "time_window_days": 3650
                 }
             ]
         },
@@ -223,7 +201,7 @@
         {
             "id": "7",
             "name": "CULTURE & ESSAYS",
-            "description": "Nonstop & Dom2k",
+            "description": "Cinematic NBA essays & documentaries: Nonstop, Dom2k, Clayton Crowley, Jonny Arnett",
             "type": "shuffle_mix",
             "sources": [
                 {
@@ -240,6 +218,22 @@
                     "exclude_keywords": [
                         "Member",
                         "Support",
+                        "Q&A"
+                    ]
+                },
+                {
+                    "name": "Clayton Crowley",
+                    "playlist_id": "UUPhN8QINb_UXV5DrHjCTqyg",
+                    "method": "playlist",
+                    "time_window_days": 365
+                },
+                {
+                    "name": "Jonny Arnett",
+                    "playlist_id": "UUSgbEY-tEu0S_ill_fEL82w",
+                    "method": "playlist",
+                    "time_window_days": 365,
+                    "exclude_keywords": [
+                        "Member",
                         "Q&A"
                     ]
                 }

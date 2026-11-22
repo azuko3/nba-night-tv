@@ -28,7 +28,7 @@ let pollInterval = null;
 const CHANNELS = {
     1: { name: "RECAPS", type: "MAIN", color: "#0050ff", trimEnd: 11 },
     2: { name: "ANALYTICS", type: "SATELLITE", color: "#9d00ff", trimEnd: 0 },
-    3: { name: "RETRO", type: "SATELLITE", color: "#ffd700", trimEnd: 0 },
+    3: { name: "CLASSIC", type: "SATELLITE", color: "#ffd700", trimEnd: 0 },
     4: { name: "MIC'D", type: "SATELLITE", color: "#00ff00", trimEnd: 0 },
     5: { name: "BUZZ", type: "SATELLITE", color: "#ff8c00", trimEnd: 0 },
     6: { name: "DENI", type: "SATELLITE", color: "#e0efff", trimEnd: 0 },
